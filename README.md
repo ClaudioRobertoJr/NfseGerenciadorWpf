@@ -11,7 +11,7 @@ Sistema de desktop desenvolvido em WPF para gerenciamento de Notas Fiscais de Se
 
 ## GIF de Demonstração
 
-*(Dica: Grave um GIF curto mostrando as principais funcionalidades do sistema e insira-o aqui. Ferramentas como ScreenToGif são ótimas para isso.)*
+
 
 ![Demo do App](caminho/para/seu/gif.gif)
 
