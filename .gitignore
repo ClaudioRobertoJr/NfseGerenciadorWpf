@@ -1,0 +1,32 @@
+# Arquivos de usuário e de build do Visual Studio
+.suo
+.user
+.userosscache
+.sln.docstates
+.userprefs
+
+# Pastas de build
+[Bb]in
+[Oo]bj
+[Rr]elease
+[Dd]ebug
+[Aa]rm
+[Aa]rm64
+x64
+x86
+anycpu
+
+# Arquivos gerados
+.tlog
+.log
+log_erros.txt
+.vspscc
+.vssscc
+.vs
+.pyc
+.pyo
+__pycache__
+
+# Outros
+..bak
+~

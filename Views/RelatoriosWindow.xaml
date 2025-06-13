@@ -1,0 +1,147 @@
+﻿<Window x:Class="NfseGerenciador.Views.RelatoriosWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:converters="clr-namespace:NfseGerenciador.Converters"
+        mc:Ignorable="d"
+        Title="Relatórios de NFS-e e Parcelas" Height="800" Width="1200"
+        WindowState="Maximized"
+        WindowStartupLocation="CenterScreen">
+
+    <Window.Resources>
+        <Style x:Key="StatusRelatorioCellStyle" TargetType="TextBlock">
+            <Setter Property="Padding" Value="5,2"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Nfse.EstaPago}" Value="True">
+                    <Setter Property="Foreground" Value="{StaticResource CorStatusPagaBrush}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Nfse.EstaPago}" Value="False">
+                    <Setter Property="Foreground" Value="{StaticResource CorStatusPendenteBrush}"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="15">
+        <DockPanel IsEnabled="{Binding IsBusy, Converter={StaticResource InvertedBooleanConverter}}">
+
+            <Border DockPanel.Dock="Top" Style="{StaticResource PainelAgrupamentoStyle}">
+                <StackPanel>
+                    <TextBlock Text="Filtros do Relatório" Style="{StaticResource TituloSecaoStyle}"/>
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <GroupBox Header="Período" Grid.Column="0" Margin="5">
+                            <StackPanel Margin="5">
+                                <TextBlock Text="Filtrar Data Por:" Style="{StaticResource LabelFiltroFormularioStyle}" Margin="0,0,0,5"/>
+                                <ComboBox ItemsSource="{Binding OpcoesFiltroData}" SelectedItem="{Binding FiltroTipoData}" Style="{StaticResource ControleFiltroFormularioStyle}"/>
+                                <WrapPanel Margin="0,10,0,0">
+                                    <TextBlock Text="De:" Style="{StaticResource LabelFiltroFormularioStyle}"/>
+                                    <DatePicker SelectedDate="{Binding FiltroDataInicial}" Style="{StaticResource ControleFiltroFormularioStyle}"/>
+                                    <TextBlock Text="Até:" Style="{StaticResource LabelFiltroFormularioStyle}"/>
+                                    <DatePicker SelectedDate="{Binding FiltroDataFinal}" Style="{StaticResource ControleFiltroFormularioStyle}"/>
+                                </WrapPanel>
+                            </StackPanel>
+                        </GroupBox>
+
+                        <GroupBox Header="Status, Tipo e Classificação" Grid.Column="1" Margin="5">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <TextBlock Text="Status Pagamento:" Grid.Row="0" Grid.Column="0" Style="{StaticResource LabelFiltroFormularioStyle}"/>
+                                <ComboBox ItemsSource="{Binding OpcoesStatusPagamento}" SelectedItem="{Binding FiltroStatusPagamento}" Grid.Row="0" Grid.Column="1" Style="{StaticResource ControleFiltroFormularioStyle}"/>
+
+                                <TextBlock Text="Tipo Recebimento:" Grid.Row="0" Grid.Column="2" Style="{StaticResource LabelFiltroFormularioStyle}"/>
+                                <ComboBox ItemsSource="{Binding TiposPagamento}" SelectedItem="{Binding FiltroTipoRecebimento}" DisplayMemberPath="TipoRecebimento" IsEnabled="{Binding IsTipoRecebimentoEnabled}" Grid.Row="0" Grid.Column="3" Style="{StaticResource ControleFiltroFormularioStyle}"/>
+
+                                <TextBlock Text="Classificação NF-e:" Grid.Row="1" Grid.Column="0" Style="{StaticResource LabelFiltroFormularioStyle}"/>
+                                <ComboBox ItemsSource="{Binding OpcoesClassificacao}" SelectedItem="{Binding FiltroClassificacao}" Grid.Row="1" Grid.Column="1" Style="{StaticResource ControleFiltroFormularioStyle}"/>
+
+                                <TextBlock Text="Local de Pagamento:" Grid.Row="1" Grid.Column="2" Style="{StaticResource LabelFiltroFormularioStyle}"/>
+                                <ComboBox ItemsSource="{Binding LocaisPagamento}" SelectedItem="{Binding FiltroLocalPagamento}" IsEnabled="{Binding IsLocalPagamentoEnabled}" Grid.Row="1" Grid.Column="3" Style="{StaticResource ControleFiltroFormularioStyle}"/>
+
+                                <TextBlock Text="Tomador:" Grid.Row="2" Grid.Column="0" Style="{StaticResource LabelFiltroFormularioStyle}"/>
+                                <TextBox Text="{Binding FiltroTomador, UpdateSourceTrigger=PropertyChanged}" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="3" Style="{StaticResource ControleFiltroFormularioStyle}"/>
+                            </Grid>
+                        </GroupBox>
+                    </Grid>
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,5,5">
+                        <Button Command="{Binding LimparFiltrosCommand}" Style="{StaticResource BotaoSecundarioStyle}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE74D;" Style="{StaticResource IconeEmBotaoStyle}"/>
+                                <TextBlock Text="Limpar Filtros" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Command="{Binding GerarRelatorioCommand}" IsDefault="True" Style="{StaticResource BotaoPrimarioStyle}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE749;" Style="{StaticResource IconeEmBotaoStyle}"/>
+                                <TextBlock Text="Gerar Relatório" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <DockPanel DockPanel.Dock="Bottom" Margin="0,10,0,0">
+                <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right">
+                    <TextBlock Text="{Binding TotalRegistros, StringFormat='Parcelas: {0}'}" VerticalAlignment="Center" Margin="0,0,15,0" FontWeight="SemiBold"/>
+                    <TextBlock Text="{Binding ValorTotal, StringFormat='Valor Total Parcelas: {0:C}'}" VerticalAlignment="Center" Margin="0,0,20,0" FontWeight="SemiBold"/>
+                    <Button Command="{Binding ExportarCsvCommand}" Style="{StaticResource BotaoSecundarioStyle}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE7A3;" Style="{StaticResource IconeEmBotaoStyle}"/>
+                            <TextBlock Text="Exportar para CSV" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </DockPanel>
+
+            <DataGrid ItemsSource="{Binding Resultados}" AutoGenerateColumns="False" IsReadOnly="True" Margin="0,10,0,0" AlternatingRowBackground="#FFF9F9F9">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Nº NF-e" Binding="{Binding Nfse.Numero}" Width="Auto" MinWidth="80"/>
+                    <DataGridTextColumn Header="Emissão" Binding="{Binding Nfse.DataEmissao, StringFormat=dd/MM/yyyy}" Width="Auto" MinWidth="100"/>
+                    <DataGridTextColumn Header="Pgto. Efetivo" Binding="{Binding Nfse.DataPagamentoEfetivo, StringFormat=dd/MM/yyyy}" Width="Auto" MinWidth="120"/>
+                    <DataGridTextColumn Header="Tomador" Binding="{Binding Nfse.TomadorRazaoSocial}" Width="2.5*"/>
+                    <DataGridTextColumn Header="Nº Parcela" Binding="{Binding NumeroParcela}" Width="Auto" MinWidth="80"/>
+                    <DataGridTextColumn Header="Valor Parcela" Binding="{Binding ValorParcela, StringFormat=C, ConverterCulture='pt-BR'}" Width="*" MinWidth="110"/>
+                    <DataGridTextColumn Header="Vencimento" Binding="{Binding DataVencimentoParcela, StringFormat=dd/MM/yyyy}" SortDirection="Ascending" Width="*" MinWidth="100"/>
+                    <DataGridTemplateColumn Header="Status NF-e" Width="*" MinWidth="100" SortMemberPath="Nfse.EstaPago">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Nfse.EstaPago, Converter={StaticResource BooleanToStatusTextConverter}}" Style="{StaticResource StatusRelatorioCellStyle}"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTextColumn Header="Tipo Pgto." Binding="{Binding Nfse.Pagamento.TipoRecebimento}" Width="*" MinWidth="120"/>
+                    <DataGridTextColumn Header="Classificação" Binding="{Binding Nfse.ClassificacaoEspecial, TargetNullValue=Normal}" Width="*" MinWidth="120"/>
+                </DataGrid.Columns>
+            </DataGrid>
+
+        </DockPanel>
+
+        <Border Background="#80FFFFFF" Visibility="{Binding IsBusy, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <StackPanel VerticalAlignment="Center">
+                <TextBlock Text="Gerando Relatório..." FontSize="18" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                <ProgressBar IsIndeterminate="True" Width="250" Height="25" Margin="20"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>
