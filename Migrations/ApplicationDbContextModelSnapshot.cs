@@ -49,6 +49,109 @@ namespace NfseGerenciador.Migrations
                     b.ToTable("EmpresasClassificadas");
                 });
 
+            modelBuilder.Entity("NfseGerenciador.Models.ImportacaoBaixas.LoteBaixa", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("HashArquivo")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<DateTime>("ImportadoEmUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("NomeArquivo")
+                        .IsRequired()
+                        .HasMaxLength(260)
+                        .HasColumnType("nvarchar(260)");
+
+                    b.Property<string>("PrestadorCnpj")
+                        .IsRequired()
+                        .HasMaxLength(14)
+                        .HasColumnType("nvarchar(14)");
+
+                    b.Property<int>("Quantidade")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Valor")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("LotesBaixas");
+                });
+
+            modelBuilder.Entity("NfseGerenciador.Models.ImportacaoBaixas.RegistroBaixa", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Centro")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Contrapartida")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("DataRelatorio")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("EstadoAnterior")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("EstadoPosterior")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Historico")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Impressao")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<int>("Linha")
+                        .HasColumnType("int");
+
+                    b.Property<int>("LoteBaixaId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("NfseId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Planilha")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("Valor")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Impressao")
+                        .IsUnique();
+
+                    b.HasIndex("LoteBaixaId");
+
+                    b.HasIndex("NfseId");
+
+                    b.ToTable("RegistrosBaixas");
+                });
+
             modelBuilder.Entity("NfseGerenciador.Models.Nfse", b =>
                 {
                     b.Property<int>("Id")
@@ -218,6 +321,25 @@ namespace NfseGerenciador.Migrations
                             NumeroParcelas = 1,
                             TipoRecebimento = "Convênio"
                         });
+                });
+
+            modelBuilder.Entity("NfseGerenciador.Models.ImportacaoBaixas.RegistroBaixa", b =>
+                {
+                    b.HasOne("NfseGerenciador.Models.ImportacaoBaixas.LoteBaixa", "Lote")
+                        .WithMany()
+                        .HasForeignKey("LoteBaixaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("NfseGerenciador.Models.Nfse", "Nota")
+                        .WithMany()
+                        .HasForeignKey("NfseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Lote");
+
+                    b.Navigation("Nota");
                 });
 
             modelBuilder.Entity("NfseGerenciador.Models.Nfse", b =>

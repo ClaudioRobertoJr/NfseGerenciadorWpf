@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using NfseGerenciador.Models;
+using NfseGerenciador.Models.ImportacaoBaixas;
 using Microsoft.Extensions.Configuration;
 
 
@@ -18,6 +19,8 @@ public class ApplicationDbContext : DbContext
         public DbSet<Pagamento> Pagamentos { get; set; }
         public DbSet<EmpresaClassificada> EmpresasClassificadas { get; set; }
         public DbSet<NfseParcela> NfseParcelas { get; set; }
+        public DbSet<LoteBaixa> LotesBaixas { get; set; }
+        public DbSet<RegistroBaixa> RegistrosBaixas { get; set; }
 
         public ApplicationDbContext(IConfiguration configuration)
         {
@@ -31,6 +34,11 @@ public class ApplicationDbContext : DbContext
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<LoteBaixa>().Property(x => x.Valor).HasPrecision(18, 2);
+            modelBuilder.Entity<RegistroBaixa>().Property(x => x.Valor).HasPrecision(18, 2);
+            modelBuilder.Entity<RegistroBaixa>().HasIndex(x => x.Impressao).IsUnique();
+            modelBuilder.Entity<RegistroBaixa>().HasOne(x => x.Lote).WithMany().HasForeignKey(x => x.LoteBaixaId).OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<RegistroBaixa>().HasOne(x => x.Nota).WithMany().HasForeignKey(x => x.NfseId).OnDelete(DeleteBehavior.Restrict);
             // Configura o relacionamento entre Nfse e Pagamento
             modelBuilder.Entity<Nfse>()
                 .HasOne(n => n.Pagamento) // Uma NF-e tem um Pagamento
