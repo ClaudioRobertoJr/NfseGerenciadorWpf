@@ -22,6 +22,10 @@
 	<ItemGroup>
 		<Page Include="App.xaml" />
 	</ItemGroup>
+	<ItemGroup>
+		<Compile Remove="Tests/**/*.cs" />
+		<Page Remove="Tests/**/*.xaml" />
+	</ItemGroup>
 
 	<ItemGroup>
 		<None Update="appsettings.json">
