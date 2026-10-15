@@ -5,22 +5,25 @@
              xmlns:sys="clr-namespace:System;assembly=mscorlib">
     <Application.Resources>
         <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Themes/Controls.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
 
             <converters:BooleanToStatusTextConverter x:Key="BooleanToStatusTextConverter"/>
             <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
             <converters:ColorBrightnessConverter x:Key="ColorBrightnessConverter"/>
             <converters:InvertedBooleanConverter x:Key="InvertedBooleanConverter"/>
 
-            <SolidColorBrush x:Key="CorPrimariaAplicacaoBrush" Color="#FF007ACC"/>
+            <SolidColorBrush x:Key="CorPrimariaAplicacaoBrush" Color="#2563EB"/>
             <SolidColorBrush x:Key="CorPrimariaTextoAplicacaoBrush" Color="White"/>
-            <SolidColorBrush x:Key="CorSecundariaAplicacaoBrush" Color="#FFE0E0E0"/>
+            <SolidColorBrush x:Key="CorSecundariaAplicacaoBrush" Color="#FFFFFF"/>
             <SolidColorBrush x:Key="CorSecundariaTextoAplicacaoBrush" Color="#FF333333"/>
-            <SolidColorBrush x:Key="CorBordaSecundariaBrush" Color="#FFADADAD"/>
+            <SolidColorBrush x:Key="CorBordaSecundariaBrush" Color="#CBD5E1"/>
             <SolidColorBrush x:Key="CorStatusPagaBrush" Color="DarkGreen"/>
             <SolidColorBrush x:Key="CorStatusPendenteBrush" Color="#D32F2F"/>
-            <SolidColorBrush x:Key="CorFontePadraoBrush" Color="#FF333333"/>
-            <SolidColorBrush x:Key="CorBordaPainelBrush" Color="#FFCCCCCC"/>
-            <SolidColorBrush x:Key="CorFundoJanelaBrush" Color="#FFF0F0F0"/>
+            <SolidColorBrush x:Key="CorFontePadraoBrush" Color="#0F172A"/>
+            <SolidColorBrush x:Key="CorBordaPainelBrush" Color="#E2E8F0"/>
+            <SolidColorBrush x:Key="CorFundoJanelaBrush" Color="#F3F6FB"/>
             <SolidColorBrush x:Key="CorFundoPainelBrush" Color="White"/>
             <FontFamily x:Key="FontePrincipalAplicacao">Segoe UI</FontFamily>
             <FontFamily x:Key="FonteTitulosAplicacao">Segoe UI Semibold</FontFamily>
@@ -45,7 +48,6 @@
             <Style TargetType="{x:Type TextBlock}">
                 <Setter Property="FontFamily" Value="{StaticResource FontePrincipalAplicacao}"/>
                 <Setter Property="FontSize" Value="{StaticResource FontSizeMedio}"/>
-                <Setter Property="Foreground" Value="{StaticResource CorFontePadraoBrush}"/>
             </Style>
             <Style TargetType="{x:Type Window}">
                 <Setter Property="Background" Value="{StaticResource CorFundoJanelaBrush}"/>
@@ -61,7 +63,7 @@
                 <Setter Property="BorderThickness" Value="1"/>
                 <Setter Property="Padding" Value="15"/>
                 <Setter Property="Margin" Value="0,0,0,15"/>
-                <Setter Property="CornerRadius" Value="4"/>
+                <Setter Property="CornerRadius" Value="10"/>
                 <Setter Property="Background" Value="{StaticResource CorFundoPainelBrush}"/>
             </Style>
             <Style x:Key="TituloSecaoStyle" TargetType="TextBlock">
@@ -72,10 +74,10 @@
                 <Setter Property="Margin" Value="0,0,0,15"/>
             </Style>
             <Style x:Key="BotaoBaseStyle" TargetType="Button">
-                <Setter Property="Padding" Value="8,6"/>
+                <Setter Property="Padding" Value="14,9"/>
                 <Setter Property="Margin" Value="5"/>
                 <Setter Property="MinWidth" Value="90"/>
-                <Setter Property="MinHeight" Value="32"/>
+                <Setter Property="MinHeight" Value="36"/>
                 <Setter Property="BorderThickness" Value="1"/>
                 <Setter Property="Cursor" Value="Hand"/>
                 <Setter Property="FontWeight" Value="SemiBold"/>
@@ -84,7 +86,7 @@
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="Button">
-                            <Border x:Name="border" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="3">
+                            <Border x:Name="border" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="7">
                                 <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}" Margin="{TemplateBinding Padding}"/>
                             </Border>
                             <ControlTemplate.Triggers>
@@ -108,7 +110,7 @@
             <Style x:Key="ControleFiltroFormularioStyle" TargetType="Control" BasedOn="{StaticResource {x:Type Control}}">
                 <Setter Property="VerticalAlignment" Value="Center"/>
                 <Setter Property="Margin" Value="0,5,10,5"/>
-                <Setter Property="MinHeight" Value="30"/>
+                <Setter Property="MinHeight" Value="34"/>
             </Style>
             <Style TargetType="DatePicker" BasedOn="{StaticResource ControleFiltroFormularioStyle}"/>
             <Style TargetType="ComboBox" BasedOn="{StaticResource ControleFiltroFormularioStyle}"/>
@@ -189,6 +191,7 @@
                 <Setter Property="Background" Value="{StaticResource CorSecundariaAplicacaoBrush}"/>
                 <Setter Property="Foreground" Value="{StaticResource CorSecundariaTextoAplicacaoBrush}"/>
             </Style>
+            <Style TargetType="Button" BasedOn="{StaticResource BotaoSecundarioStyle}"/>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

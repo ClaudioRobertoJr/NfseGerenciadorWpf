@@ -74,9 +74,7 @@ namespace NfseGerenciador.ViewModels
                 try
                 {
                     string filePath = saveFileDialog.FileName;
-                    string sqlCommand = $"BACKUP DATABASE [{_databaseName}] TO DISK = '{filePath}' WITH NOFORMAT, NOINIT, NAME = N'{_databaseName}-Full Database Backup', SKIP, NOREWIND, NOUNLOAD, STATS = 10";
-
-                    await ExecuteSqlCommand(sqlCommand, "Backup");
+                    await new SqlBackupService(_configuration).CriarVerificadoAsync(filePath);
 
                     StatusMessage = $"Backup concluído com sucesso em: {filePath}";
                     MessageBox.Show(StatusMessage, "Sucesso", MessageBoxButton.OK, MessageBoxImage.Information);

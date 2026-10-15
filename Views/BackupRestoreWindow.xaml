@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:converters="clr-namespace:NfseGerenciador.Converters"
         mc:Ignorable="d"
-        Title="Backup e Restauração" Height="400" Width="600"
+        Title="Backup e restauração • NFSe" Height="480" Width="720" MinWidth="600" MinHeight="400" Language="pt-BR"
         WindowStartupLocation="CenterOwner">
     <Grid Margin="15">
         <Grid IsEnabled="{Binding IsBusy, Converter={StaticResource InvertedBooleanConverter}}">

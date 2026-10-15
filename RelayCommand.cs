@@ -24,13 +24,13 @@ public class RelayCommand : ICommand
 
     // Sobrecarga para facilitar o uso com métodos síncronos sem parâmetros
     public RelayCommand(Action execute, Func<bool> canExecute = null)
-        : this(p => Task.Run(execute), p => canExecute?.Invoke() ?? true)
+        : this(p => { execute(); return Task.CompletedTask; }, p => canExecute?.Invoke() ?? true)
     {
     }
 
     // Sobrecarga para facilitar o uso com métodos síncronos com parâmetros
     public RelayCommand(Action<object> execute, Predicate<object> canExecute = null)
-        : this(p => Task.Run(() => execute(p)), canExecute)
+        : this(p => { execute(p); return Task.CompletedTask; }, canExecute)
     {
     }
 

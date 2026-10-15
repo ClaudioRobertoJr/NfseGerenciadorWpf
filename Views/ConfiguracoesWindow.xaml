@@ -5,12 +5,12 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:converters="clr-namespace:NfseGerenciador.Converters"
         mc:Ignorable="d"
-        Title="Configurações" Height="450" Width="700"
-        WindowStartupLocation="CenterOwner" ResizeMode="NoResize">
+        Title="Configurações • NFSe" Height="620" Width="760" MinWidth="640" MinHeight="520" Language="pt-BR"
+        WindowStartupLocation="CenterOwner">
     <Grid>
         <Grid IsEnabled="{Binding IsBusy, Converter={StaticResource InvertedBooleanConverter}}">
             <StackPanel Margin="20">
-                <TextBlock Text="Configurações do Sistema" FontSize="22" FontWeight="Bold" Margin="0,0,0,20" />
+                <TextBlock Text="Configurações do sistema" FontSize="26" FontWeight="SemiBold" Margin="0,0,0,20" />
 
                 <GroupBox Header="Configuração do Banco de Dados" Padding="10">
                     <StackPanel>

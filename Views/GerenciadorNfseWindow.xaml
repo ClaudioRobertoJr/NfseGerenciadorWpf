@@ -1,178 +1,73 @@
-﻿<Window x:Class="NfseGerenciador.Views.GerenciadorNfseWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:converters="clr-namespace:NfseGerenciador.Converters"
-        mc:Ignorable="d"
-        Title="Gerenciador de Notas Fiscais Eletrônicas" 
-        Height="800" Width="1250"
-        WindowStartupLocation="CenterScreen"
-        WindowState="Maximized">
-
-    <Window.Resources>
-        <Style x:Key="StatusCellStyle" TargetType="DataGridCell">
-            <Setter Property="Padding" Value="5,2"/>
-            <Setter Property="VerticalAlignment" Value="Center"/>
-            <Setter Property="HorizontalAlignment" Value="Center"/>
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding EstaPago}" Value="True">
-                    <Setter Property="Background" Value="#E8F5E9"/>
-                    <Setter Property="Foreground" Value="{StaticResource CorStatusPagaBrush}"/>
-                </DataTrigger>
-                <DataTrigger Binding="{Binding EstaPago}" Value="False">
-                    <Setter Property="Background" Value="#FFEBEE"/>
-                    <Setter Property="Foreground" Value="{StaticResource CorStatusPendenteBrush}"/>
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
-    </Window.Resources>
-
-    <Grid Margin="10">
-        <Grid IsEnabled="{Binding IsBusy, Converter={StaticResource InvertedBooleanConverter}}">
-
-            <DockPanel>
-                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,10">
-                    <Button Command="{Binding ImportarXmlCommand}" Style="{StaticResource BotaoPrimarioStyle}">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="&#xE8C6;" Style="{StaticResource IconeEmBotaoStyle}"/>
-                            <TextBlock Text="Importar XML" VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </Button>
-                    <Button Command="{Binding AtualizarListaCommand}" Style="{StaticResource BotaoSecundarioStyle}">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="&#xE72C;" Style="{StaticResource IconeEmBotaoStyle}"/>
-                            <TextBlock Text="Atualizar" VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </Button>
-                    <Button Command="{Binding ExcluirNotaCommand}" Style="{StaticResource BotaoSecundarioStyle}">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="&#xE74D;" Style="{StaticResource IconeEmBotaoStyle}" Foreground="{StaticResource CorStatusPendenteBrush}"/>
-                            <TextBlock Text="Excluir Nota" VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </Button>
-                </StackPanel>
-
-                <DockPanel DockPanel.Dock="Bottom">
-                    <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,5,0,0">
-                        <Button Content="&lt; Anterior" Command="{Binding PaginaAnteriorCommand}" Style="{StaticResource BotaoSecundarioStyle}" Margin="0,0,5,0"/>
-                        <TextBlock Text="{Binding StatusPaginacao}" VerticalAlignment="Center" Margin="10,0" Style="{StaticResource LabelFiltroFormularioStyle}"/>
-                        <Button Content="Próxima >" Command="{Binding ProximaPaginaCommand}" Style="{StaticResource BotaoSecundarioStyle}" Margin="5,0,0,0"/>
-                    </StackPanel>
-
-                    <Border Visibility="{Binding IsDetalhesVisible, Converter={StaticResource BooleanToVisibilityConverter}}" Style="{StaticResource PainelAgrupamentoStyle}" Margin="0,10,0,0" DockPanel.Dock="Bottom">
-                        <StackPanel>
-                            <TextBlock Text="Gerenciar Pagamento da Nota Selecionada" Style="{StaticResource TituloSecaoStyle}"/>
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                </Grid.RowDefinitions>
-
-                                <CheckBox Grid.Row="0" Grid.Column="0" IsChecked="{Binding DetalhesEstaPago}" Content="Nota Paga" FontWeight="Bold" Margin="0,5,20,5"/>
-
-                                <TextBlock Text="Local Pgto:" Grid.Row="0" Grid.Column="1" Style="{StaticResource LabelFiltroFormularioStyle}" IsEnabled="{Binding DetalhesEstaPago}" HorizontalAlignment="Right"/>
-                                <ComboBox Grid.Row="0" Grid.Column="2" ItemsSource="{Binding LocaisPagamento}" SelectedItem="{Binding DetalhesLocalPagamento}" Style="{StaticResource ControleFiltroFormularioStyle}" IsEnabled="{Binding DetalhesEstaPago}" MinWidth="130"/>
-
-                                <TextBlock Text="Data Pag. Efetivo:" Grid.Row="0" Grid.Column="3" Style="{StaticResource LabelFiltroFormularioStyle}" IsEnabled="{Binding DetalhesEstaPago}" HorizontalAlignment="Right"/>
-                                <DatePicker Grid.Row="0" Grid.Column="4" SelectedDate="{Binding DetalhesDataPagamento}" Style="{StaticResource ControleFiltroFormularioStyle}" IsEnabled="{Binding DetalhesEstaPago}" MinWidth="120"/>
-
-                                <TextBlock Text="Tipo Recebimento:" Grid.Row="0" Grid.Column="5" Style="{StaticResource LabelFiltroFormularioStyle}" IsEnabled="{Binding DetalhesEstaPago}" HorizontalAlignment="Right"/>
-                                <ComboBox Grid.Row="0" Grid.Column="6" ItemsSource="{Binding TiposPagamento}" SelectedItem="{Binding DetalhesTipoRecebimento}" DisplayMemberPath="TipoRecebimento" Style="{StaticResource ControleFiltroFormularioStyle}" IsEnabled="{Binding DetalhesEstaPago}" MinWidth="150"/>
-
-                                <WrapPanel Grid.Row="1" Grid.ColumnSpan="6" Margin="0,10,0,0">
-                                    <CheckBox IsChecked="{Binding DetalhesEhAVista}" IsEnabled="{Binding DetalhesTipoRecebimento.EhAVista, Converter={StaticResource InvertedBooleanConverter}}" Content="À Vista" FontWeight="Bold" Margin="10,0,15,0"/>
-                                    <TextBlock Text="Nº Parcelas:" Style="{StaticResource LabelFiltroFormularioStyle}" IsEnabled="{Binding DetalhesEhAVista, Converter={StaticResource InvertedBooleanConverter}}"/>
-                                    <TextBox Text="{Binding DetalhesNumParcelas}" Width="60" IsEnabled="{Binding DetalhesEhAVista, Converter={StaticResource InvertedBooleanConverter}}" Style="{StaticResource ControleFiltroFormularioStyle}"/>
-                                </WrapPanel>
-                            </Grid>
-
-                            <Button Command="{Binding SalvarPagamentoCommand}" HorizontalAlignment="Right" Style="{StaticResource BotaoPrimarioStyle}" Margin="0,15,0,0">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="&#xE74E;" Style="{StaticResource IconeEmBotaoStyle}"/>
-                                    <TextBlock Text="Salvar Pagamento" VerticalAlignment="Center"/>
-                                </StackPanel>
-                            </Button>
-                        </StackPanel>
-                    </Border>
-
-                    <GroupBox Header="Parcelas da Nota Selecionada" Margin="0,10,0,0" DockPanel.Dock="Bottom" FontWeight="SemiBold"
-                              Visibility="{Binding IsDetalhesVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
-                        <DataGrid ItemsSource="{Binding NfseSelecionada.Parcelas}" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True" MaxHeight="150">
-                            <DataGrid.Columns>
-                                <DataGridTextColumn Header="Nº" Binding="{Binding NumeroParcela}" Width="Auto"/>
-                                <DataGridTextColumn Header="Valor" Binding="{Binding ValorParcela, StringFormat=C, ConverterCulture='pt-BR'}" Width="*"/>
-                                <DataGridTextColumn Header="Vencimento" Binding="{Binding DataVencimentoParcela, StringFormat=dd/MM/yyyy}" Width="*"/>
-                                <DataGridTextColumn Header="Status" Binding="{Binding ParcelaPaga, Converter={StaticResource BooleanToStatusTextConverter}}" Width="*"/>
-                                <DataGridTextColumn Header="Data Pag." Binding="{Binding DataPagamentoParcela, StringFormat=dd/MM/yyyy}" Width="*"/>
-                            </DataGrid.Columns>
-                        </DataGrid>
-                    </GroupBox>
-                </DockPanel>
-
-                <Border DockPanel.Dock="Top" Style="{StaticResource PainelAgrupamentoStyle}" Margin="0,0,0,10">
-                    <StackPanel>
-                        <TextBlock Text="Filtros de Notas Fiscais" Style="{StaticResource TituloSecaoStyle}"/>
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <WrapPanel>
-                                <TextBlock Text="Status:" Style="{StaticResource LabelFiltroFormularioStyle}"/>
-
-                                <ComboBox ItemsSource="{Binding OpcoesStatusFiltro}" 
-                                          SelectedItem="{Binding FiltroStatus}" 
-                                          MinWidth="120" 
-                                          Style="{StaticResource ControleFiltroFormularioStyle}"/>
-
-                                <TextBlock Text="Emissão De:" Style="{StaticResource LabelFiltroFormularioStyle}"/>
-                                <DatePicker SelectedDate="{Binding FiltroDataInicial}" Style="{StaticResource ControleFiltroFormularioStyle}"/>
-                                <TextBlock Text="Até:" Style="{StaticResource LabelFiltroFormularioStyle}"/>
-                                <DatePicker SelectedDate="{Binding FiltroDataFinal}" Style="{StaticResource ControleFiltroFormularioStyle}"/>
-                                <TextBlock Text="Buscar (Tomador/Nº):" Style="{StaticResource LabelFiltroFormularioStyle}"/>
-                                <TextBox Text="{Binding FiltroTexto, UpdateSourceTrigger=PropertyChanged}" Width="250" Style="{StaticResource ControleFiltroFormularioStyle}"/>
-                            </WrapPanel>
-                            <Button Grid.Column="1" Command="{Binding LimparFiltrosCommand}" Style="{StaticResource BotaoSecundarioStyle}">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="&#xE894;" Style="{StaticResource IconeEmBotaoStyle}"/>
-                                    <TextBlock Text="Limpar Filtros" VerticalAlignment="Center"/>
-                                </StackPanel>
-                            </Button>
-                        </Grid>
-                    </StackPanel>
-                </Border>
-
-                <DataGrid ItemsSource="{Binding Nfses}" SelectedItem="{Binding NfseSelecionada}" AutoGenerateColumns="False" IsReadOnly="True" AlternatingRowBackground="#FFF7F7F7">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn Header="Número" Binding="{Binding Numero}" Width="Auto"/>
-                        <DataGridTextColumn Header="Emissão" Binding="{Binding DataEmissao, StringFormat='dd/MM/yyyy'}" SortDirection="Descending" Width="Auto"/>
-                        <DataGridTextColumn Header="Valor" Binding="{Binding ValorLiquidoNfse, StringFormat=C, ConverterCulture='pt-BR'}" Width="Auto" MinWidth="110"/>
-                        <DataGridTextColumn Header="Tomador" Binding="{Binding TomadorRazaoSocial}" Width="2.5*"/>
-                        <DataGridTextColumn Header="Local Pgto" Binding="{Binding Local}" Width="*"/>
-                        <DataGridTextColumn Header="Status" Binding="{Binding EstaPago, Converter={StaticResource BooleanToStatusTextConverter}}" CellStyle="{StaticResource StatusCellStyle}" Width="*"/>
-                        <DataGridTextColumn Header="Data Pag." Binding="{Binding DataPagamentoEfetivo, StringFormat='dd/MM/yyyy'}" Width="Auto"/>
-                        <DataGridTextColumn Header="Tipo Pgto." Binding="{Binding Pagamento.TipoRecebimento}" Width="*"/>
-                    </DataGrid.Columns>
-                </DataGrid>
-
-            </DockPanel>
-        </Grid>
-
-        <Border Grid.RowSpan="6" Background="#80000000" Visibility="{Binding IsBusy, Converter={StaticResource BooleanToVisibilityConverter}}">
-            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                <TextBlock Text="Processando..." Foreground="White" FontSize="18" FontWeight="SemiBold"/>
-                <ProgressBar IsIndeterminate="True" Width="250" Height="20" Margin="0,10,0,0"/>
-            </StackPanel>
-        </Border>
-    </Grid>
+<Window x:Class="NfseGerenciador.Views.GerenciadorNfseWindow"
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+ Title="Notas e recebimentos • NFSe" Width="1320" Height="820" MinWidth="980" MinHeight="580" WindowState="Maximized" WindowStartupLocation="CenterOwner" Language="pt-BR">
+ <Window.Resources><Style x:Key="ValorDireita" TargetType="TextBlock"><Setter Property="HorizontalAlignment" Value="Right"/></Style></Window.Resources>
+ <Grid Margin="24,20">
+  <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+  <DockPanel Margin="0,0,0,18">
+   <WrapPanel DockPanel.Dock="Right" VerticalAlignment="Center" IsEnabled="{Binding IsBusy,Converter={StaticResource InvertedBooleanConverter}}">
+    <Button Content="Importar XML" Command="{Binding ImportarXmlCommand}" Style="{StaticResource BotaoSecundarioStyle}"/>
+    <Button Content="Importar baixas" Click="ImportarBaixas" Style="{StaticResource BotaoPrimarioStyle}"/>
+    <Button Content="Atualizar" Command="{Binding AtualizarListaCommand}" Style="{StaticResource BotaoSecundarioStyle}"/>
+   </WrapPanel>
+   <StackPanel><TextBlock Text="Notas e recebimentos" FontSize="26" FontWeight="SemiBold"/><TextBlock Text="Consulte notas e registre recebimentos." Foreground="#64748B" Margin="0,5,0,0"/></StackPanel>
+  </DockPanel>
+  <Border Grid.Row="1" Style="{StaticResource PainelAgrupamentoStyle}" Padding="16,10">
+   <WrapPanel IsEnabled="{Binding IsBusy,Converter={StaticResource InvertedBooleanConverter}}">
+    <StackPanel Width="140"><TextBlock Text="Situação" Foreground="#64748B"/><ComboBox ItemsSource="{Binding OpcoesStatusFiltro}" SelectedItem="{Binding FiltroStatus}"/></StackPanel>
+    <StackPanel Width="145"><TextBlock Text="Local de pagamento" Foreground="#64748B"/><ComboBox ItemsSource="{Binding OpcoesLocalFiltro}" SelectedItem="{Binding FiltroLocal}"/></StackPanel>
+    <StackPanel Width="145"><TextBlock Text="{Binding RotuloDataInicial}" Foreground="#64748B"/><DatePicker SelectedDate="{Binding FiltroDataInicial}"/></StackPanel>
+    <StackPanel Width="145"><TextBlock Text="Até" Foreground="#64748B"/><DatePicker SelectedDate="{Binding FiltroDataFinal}"/></StackPanel>
+    <StackPanel Width="250"><TextBlock Text="Tomador, CPF/CNPJ ou nota" Foreground="#64748B"/><TextBox Text="{Binding FiltroTexto,UpdateSourceTrigger=PropertyChanged,Delay=350}" VerticalContentAlignment="Center"/></StackPanel>
+    <Button Content="Limpar filtros" Command="{Binding LimparFiltrosCommand}" Style="{StaticResource BotaoSecundarioStyle}" VerticalAlignment="Bottom"/>
+   </WrapPanel>
+  </Border>
+  <Grid Grid.Row="2">
+   <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="18"/><ColumnDefinition Width="310"/></Grid.ColumnDefinitions>
+   <Grid><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+    <DockPanel Margin="0,0,0,10"><TextBlock DockPanel.Dock="Right" Text="{Binding TotalFiltrado,StringFormat=C2}" FontWeight="Bold" FontSize="18"/>
+     <StackPanel Orientation="Horizontal"><TextBlock Text="{Binding TotalItems,StringFormat={}{0} notas}" FontWeight="SemiBold"/><TextBlock Text="{Binding PendentesFiltradas,StringFormat={}  •  {0} pendentes}" Foreground="#64748B"/></StackPanel>
+    </DockPanel>
+    <DataGrid Grid.Row="1" ItemsSource="{Binding Nfses}" SelectedItem="{Binding NfseSelecionada}" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False" SelectionMode="Single" SelectionUnit="FullRow" IsEnabled="{Binding IsBusy,Converter={StaticResource InvertedBooleanConverter}}">
+     <DataGrid.Columns>
+      <DataGridTextColumn Header="Nota" Binding="{Binding Numero}" Width="70"/>
+      <DataGridTextColumn Header="Emissão" Binding="{Binding DataEmissao,StringFormat=dd/MM/yyyy}" Width="95"/>
+      <DataGridTextColumn Header="Valor" Binding="{Binding ValorLiquidoNfse,StringFormat=C2}" Width="110" ElementStyle="{StaticResource ValorDireita}"/>
+      <DataGridTextColumn Header="Tomador" Binding="{Binding TomadorRazaoSocial}" Width="*" MinWidth="170"/>
+      <DataGridTemplateColumn Header="Situação" Width="100"><DataGridTemplateColumn.CellTemplate><DataTemplate>
+       <Border CornerRadius="10" Padding="8,3" HorizontalAlignment="Left"><Border.Style><Style TargetType="Border"><Setter Property="Background" Value="#FFF4DE"/><Style.Triggers><DataTrigger Binding="{Binding EstaPago}" Value="True"><Setter Property="Background" Value="#DCFCE7"/></DataTrigger></Style.Triggers></Style></Border.Style>
+        <TextBlock Text="{Binding EstaPago,Converter={StaticResource BooleanToStatusTextConverter}}" FontSize="12" FontWeight="SemiBold"><TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Foreground" Value="#92400E"/><Style.Triggers><DataTrigger Binding="{Binding EstaPago}" Value="True"><Setter Property="Foreground" Value="#166534"/></DataTrigger></Style.Triggers></Style></TextBlock.Style></TextBlock>
+       </Border>
+      </DataTemplate></DataGridTemplateColumn.CellTemplate></DataGridTemplateColumn>
+      <DataGridTextColumn Header="Local" Binding="{Binding Local}" Width="100"/>
+      <DataGridTextColumn Header="Recebimento" Binding="{Binding DataPagamentoEfetivo,StringFormat=dd/MM/yyyy}" Width="105"/>
+      <DataGridTextColumn Header="Forma" Binding="{Binding Pagamento.TipoRecebimento}" Width="110"/>
+     </DataGrid.Columns>
+    </DataGrid>
+   </Grid>
+   <Border Grid.Column="2" Style="{StaticResource PainelAgrupamentoStyle}" Margin="0" Padding="18">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" IsEnabled="{Binding IsBusy,Converter={StaticResource InvertedBooleanConverter}}"><StackPanel>
+     <TextBlock Text="Pagamento da nota" FontSize="18" FontWeight="SemiBold"/>
+     <TextBlock Text="Selecione uma nota na tabela para consultar ou editar." TextWrapping="Wrap" Foreground="#64748B" Margin="0,6,0,14"/>
+     <StackPanel IsEnabled="{Binding IsDetalhesVisible}">
+      <TextBlock Text="{Binding NfseSelecionada.Numero,StringFormat=Nota {0}}" FontSize="24" FontWeight="SemiBold" Foreground="#2563EB"/>
+      <TextBlock Text="{Binding NfseSelecionada.TomadorRazaoSocial}" TextWrapping="Wrap" FontWeight="SemiBold" Margin="0,5,0,6"/>
+      <TextBlock Text="{Binding NfseSelecionada.ValorLiquidoNfse,StringFormat=C2}" FontSize="20" Margin="0,0,0,14"/>
+      <CheckBox Content="Nota paga" IsChecked="{Binding DetalhesEstaPago}" FontWeight="SemiBold"/>
+      <TextBlock Text="Local de pagamento" Margin="0,10,0,0" Foreground="#64748B"/><ComboBox ItemsSource="{Binding LocaisPagamento}" SelectedItem="{Binding DetalhesLocalPagamento}"/>
+      <TextBlock Text="Data do recebimento" Margin="0,8,0,0" Foreground="#64748B"/><DatePicker SelectedDate="{Binding DetalhesDataPagamento}" IsEnabled="{Binding DetalhesEstaPago}"/>
+      <TextBlock Text="Forma de pagamento" Margin="0,8,0,0" Foreground="#64748B"/><ComboBox ItemsSource="{Binding TiposPagamento}" SelectedItem="{Binding DetalhesTipoRecebimento}" DisplayMemberPath="TipoRecebimento" IsEnabled="{Binding DetalhesEstaPago}"/>
+      <DockPanel Margin="0,8"><CheckBox DockPanel.Dock="Left" Content="À vista" IsChecked="{Binding DetalhesEhAVista}" IsEnabled="{Binding DetalhesEstaPago}"/><TextBox Text="{Binding DetalhesNumParcelas,UpdateSourceTrigger=PropertyChanged}" Width="65" HorizontalAlignment="Right" ToolTip="Número de parcelas" IsEnabled="{Binding DetalhesEhAVista,Converter={StaticResource InvertedBooleanConverter}}"/><TextBlock Text="Parcelas" VerticalAlignment="Center" HorizontalAlignment="Right"/></DockPanel>
+      <Button Content="Salvar pagamento" Command="{Binding SalvarPagamentoCommand}" Style="{StaticResource BotaoPrimarioStyle}" Margin="0,6,0,12"/>
+      <Expander Header="Parcelas da nota" Margin="0,6"><DataGrid ItemsSource="{Binding NfseSelecionada.Parcelas}" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True" MaxHeight="180" Margin="0,8,0,0"><DataGrid.Columns>
+       <DataGridTextColumn Header="Nº" Binding="{Binding NumeroParcela}" Width="40"/><DataGridTextColumn Header="Valor" Binding="{Binding ValorParcela,StringFormat=C2}" Width="90"/><DataGridTextColumn Header="Vencimento" Binding="{Binding DataVencimentoParcela,StringFormat=dd/MM/yyyy}" Width="100"/><DataGridTextColumn Header="Pagamento" Binding="{Binding DataPagamentoParcela,StringFormat=dd/MM/yyyy}" Width="100"/>
+      </DataGrid.Columns></DataGrid></Expander>
+      <Button Content="Excluir nota" Command="{Binding ExcluirNotaCommand}" Style="{StaticResource BotaoSecundarioStyle}" Foreground="#B91C1C" Margin="0,16,0,0"/>
+     </StackPanel>
+    </StackPanel></ScrollViewer>
+   </Border>
+   <Border Grid.ColumnSpan="3" Background="#CCF3F6FB" Visibility="{Binding IsBusy,Converter={StaticResource BooleanToVisibilityConverter}}"><StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"><TextBlock Text="Atualizando informações…" FontSize="17" FontWeight="SemiBold"/><ProgressBar IsIndeterminate="True" Height="4" Width="220" Margin="0,14"/></StackPanel></Border>
+  </Grid>
+  <DockPanel Grid.Row="3" Margin="0,12,0,0"><StackPanel Orientation="Horizontal" DockPanel.Dock="Right"><Button Content="Anterior" Command="{Binding PaginaAnteriorCommand}" Style="{StaticResource BotaoSecundarioStyle}"/><Button Content="Próxima" Command="{Binding ProximaPaginaCommand}" Style="{StaticResource BotaoSecundarioStyle}"/></StackPanel><TextBlock Text="{Binding StatusPaginacao}" VerticalAlignment="Center" Foreground="#64748B"/></DockPanel>
+ </Grid>
 </Window>

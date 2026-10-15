@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:converters="clr-namespace:NfseGerenciador.Converters"
         mc:Ignorable="d"
-        Title="Relatórios de NFS-e e Parcelas" Height="800" Width="1200"
+        Title="Relatórios • NFSe" Height="800" Width="1200" Language="pt-BR"
         WindowState="Maximized"
         WindowStartupLocation="CenterScreen">
 

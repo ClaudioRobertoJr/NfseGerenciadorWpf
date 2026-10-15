@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:NfseGerenciador.Views"
         mc:Ignorable="d"
-        Title="Gerenciar Empresas Classificadas" Height="550" Width="800"
+        Title="Empresas • NFSe" Height="650" Width="900" MinWidth="760" MinHeight="550" Language="pt-BR"
         WindowStartupLocation="CenterScreen">
 
     <Grid IsEnabled="{Binding IsViewEnabled}">

@@ -6,7 +6,7 @@
         xmlns:lvc="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf"
         xmlns:converters="clr-namespace:NfseGerenciador.Converters"
         mc:Ignorable="d"
-        Title="Dashboard Principal" Height="800" Width="1280"
+        Title="Visão geral • NFSe" Height="800" Width="1280" Language="pt-BR"
         WindowState="Maximized"
         WindowStartupLocation="CenterScreen">
 

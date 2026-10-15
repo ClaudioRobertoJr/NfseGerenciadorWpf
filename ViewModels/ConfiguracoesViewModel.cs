@@ -64,7 +64,7 @@ namespace NfseGerenciador.ViewModels
         {
             try
             {
-                string configFile = "appsettings.json";
+                string configFile = Path.Combine(AppContext.BaseDirectory, "appsettings.json");
                 if (File.Exists(configFile))
                 {
                     string json = File.ReadAllText(configFile);
@@ -86,7 +86,7 @@ namespace NfseGerenciador.ViewModels
             StatusMessage = "Salvando configurações...";
             try
             {
-                string configFile = "appsettings.json";
+                string configFile = Path.Combine(AppContext.BaseDirectory, "appsettings.json");
                 var jsonNode = JsonNode.Parse(File.ReadAllText(configFile));
 
                 // Garante que os nós existam
@@ -101,7 +101,7 @@ namespace NfseGerenciador.ViewModels
                 var options = new JsonSerializerOptions { WriteIndented = true };
                 await File.WriteAllTextAsync(configFile, jsonNode.ToJsonString(options));
 
-                StatusMessage = "Configurações salvas com sucesso!";
+                StatusMessage = "Configurações salvas. Reinicie o programa para aplicar a conexão.";
                 MessageBox.Show(StatusMessage, "Sucesso", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)

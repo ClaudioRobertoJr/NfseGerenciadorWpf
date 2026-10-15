@@ -23,6 +23,17 @@ namespace NfseGerenciador.ViewModels
         private int _currentPage = 1;
         private int _pageSize = 50; // Quantidade de itens por página
         private int _totalItems;
+        private decimal _totalFiltrado;
+        private int _pendentesFiltradas;
+        private readonly System.Threading.SemaphoreSlim _loadGate = new(1, 1);
+        private int _filterVersion;
+        private string? _selectedState;
+        public decimal TotalFiltrado { get => _totalFiltrado; private set { _totalFiltrado = value; OnPropertyChanged(nameof(TotalFiltrado)); } }
+        public int PendentesFiltradas { get => _pendentesFiltradas; private set { _pendentesFiltradas = value; OnPropertyChanged(nameof(PendentesFiltradas)); } }
+        public List<string> OpcoesLocalFiltro { get; } = ["Todos", "Laboratorio", "Particular", "Radiologia", "Outros"];
+        public string FiltroLocal { get => _filtroLocal ?? "Todos"; set { _filtroLocal = value == "Todos" ? null : value; OnPropertyChanged(nameof(FiltroLocal)); _ = AplicarFiltroCompleto(true); } }
+        public string RotuloDataInicial => FiltroStatus == "Pagas" ? "Recebimento de" : "Emissão de";
+        public Task AtualizarAsync() => AplicarFiltroCompleto(false);
 
         private bool _isBusy;
         private bool _isDetalhesVisible;
@@ -64,13 +75,13 @@ namespace NfseGerenciador.ViewModels
                 TiposPagamento = new ObservableCollection<Pagamento>(context.Pagamentos.OrderBy(p => p.TipoRecebimento).ToList());
             }
 
-            ImportarXmlCommand = new RelayCommand(ImportarXmlAsync);
-            AtualizarListaCommand = new RelayCommand(async () => await AplicarFiltroCompleto(true));
-            ExcluirNotaCommand = new RelayCommand(ExcluirNotaAsync, () => NfseSelecionada != null);
+            ImportarXmlCommand = new RelayCommand(ImportarXmlAsync, () => !IsBusy);
+            AtualizarListaCommand = new RelayCommand(async () => await AplicarFiltroCompleto(true), () => !IsBusy);
+            ExcluirNotaCommand = new RelayCommand(() => ExecutarOperacaoAsync(ExcluirNotaAsync), () => !IsBusy && NfseSelecionada != null);
             LimparFiltrosCommand = new RelayCommand(LimparFiltros);
-            SalvarPagamentoCommand = new RelayCommand(SalvarPagamentoAsync, () => NfseSelecionada != null && PodeSalvarPagamento());
-            PaginaAnteriorCommand = new RelayCommand(async () => await MudarPagina(-1), () => CurrentPage > 1);
-            ProximaPaginaCommand = new RelayCommand(async () => await MudarPagina(1), () => CurrentPage < TotalPages);
+            SalvarPagamentoCommand = new RelayCommand(() => ExecutarOperacaoAsync(SalvarPagamentoAsync), () => !IsBusy && IsDetalhesVisible && NfseSelecionada != null && PodeSalvarPagamento());
+            PaginaAnteriorCommand = new RelayCommand(async () => await MudarPagina(-1), () => !IsBusy && CurrentPage > 1);
+            ProximaPaginaCommand = new RelayCommand(async () => await MudarPagina(1), () => !IsBusy && CurrentPage < TotalPages);
 
             AplicarFiltroCompleto(true);
         }
@@ -109,14 +120,14 @@ namespace NfseGerenciador.ViewModels
             set { _totalItems = value; OnPropertyChanged(nameof(TotalItems)); OnPropertyChanged(nameof(TotalPages)); OnPropertyChanged(nameof(StatusPaginacao)); }
         }
 
-        public int TotalPages => (int)Math.Ceiling((double)TotalItems / PageSize);
+        public int TotalPages => Math.Max(1, (int)Math.Ceiling((double)TotalItems / PageSize));
 
         public string StatusPaginacao => $"Página {CurrentPage} de {TotalPages} ({TotalItems} registros)";
 
         #endregion
 
         #region Propriedades para Binding
-        public bool IsBusy { get => _isBusy; set { _isBusy = value; OnPropertyChanged(nameof(IsBusy)); } }
+        public bool IsBusy { get => _isBusy; set { _isBusy = value; OnPropertyChanged(nameof(IsBusy)); CommandManager.InvalidateRequerySuggested(); } }
         public bool IsDetalhesVisible { get => _isDetalhesVisible; set { _isDetalhesVisible = value; OnPropertyChanged(nameof(IsDetalhesVisible)); } }
 
         public Nfse NfseSelecionada
@@ -131,7 +142,7 @@ namespace NfseGerenciador.ViewModels
             }
         }
         public string FiltroTexto { get => _filtroTexto; set { _filtroTexto = value; OnPropertyChanged(nameof(FiltroTexto)); AplicarFiltroCompleto(true); } }
-        public string FiltroStatus { get => _filtroStatus; set { _filtroStatus = value; OnPropertyChanged(nameof(FiltroStatus)); AplicarFiltroCompleto(true); } }
+        public string FiltroStatus { get => _filtroStatus; set { _filtroStatus = value; OnPropertyChanged(nameof(FiltroStatus)); OnPropertyChanged(nameof(RotuloDataInicial)); _ = AplicarFiltroCompleto(true); } }
         public DateTime? FiltroDataInicial { get => _filtroDataInicial; set { _filtroDataInicial = value; OnPropertyChanged(nameof(FiltroDataInicial)); AplicarFiltroCompleto(true); } }
         public DateTime? FiltroDataFinal { get => _filtroDataFinal; set { _filtroDataFinal = value; OnPropertyChanged(nameof(FiltroDataFinal)); AplicarFiltroCompleto(true); } }
         public bool DetalhesEstaPago { get => _detalhesEstaPago; set { _detalhesEstaPago = value; OnPropertyChanged(nameof(DetalhesEstaPago)); CommandManager.InvalidateRequerySuggested(); } }
@@ -143,6 +154,13 @@ namespace NfseGerenciador.ViewModels
         #endregion
 
         #region Comandos
+        private async Task ExecutarOperacaoAsync(Func<Task> action)
+        {
+            if (IsBusy) return;
+            IsBusy = true;
+            try { await action(); }
+            finally { IsBusy = false; }
+        }
         private async Task ImportarXmlAsync()
         {
             var openFileDialog = new OpenFileDialog { Multiselect = true, Filter = "Arquivos XML (*.xml)|*.xml", Title = "Selecionar Arquivos NFS-e" };
@@ -222,12 +240,19 @@ namespace NfseGerenciador.ViewModels
             try
             {
                 using var context = _contextFactory.CreateDbContext();
+                await using var transaction = await context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
                 var notaParaAtualizar = await context.Nfses.Include(n => n.Parcelas).FirstOrDefaultAsync(n => n.Id == NfseSelecionada.Id);
                 if (notaParaAtualizar == null) return;
+                if (_selectedState != NfseGerenciador.Services.ImportacaoBaixas.ConciliadorBaixas.Estado(notaParaAtualizar))
+                {
+                    MessageBox.Show("A nota foi alterada desde a seleção. Atualize a lista e confira o pagamento antes de salvar.", "Nota alterada");
+                    return;
+                }
 
                 notaParaAtualizar.Local = DetalhesLocalPagamento;
                 notaParaAtualizar.EstaPago = DetalhesEstaPago;
                 context.NfseParcelas.RemoveRange(notaParaAtualizar.Parcelas);
+                notaParaAtualizar.Parcelas.Clear();
 
                 if (DetalhesEstaPago)
                 {
@@ -249,7 +274,8 @@ namespace NfseGerenciador.ViewModels
                 }
 
                 await context.SaveChangesAsync();
-                AplicarFiltroCompleto(false);
+                await transaction.CommitAsync();
+                await AplicarFiltroCompleto(false);
                 MessageBox.Show("Pagamento salvo com sucesso!");
             }
             catch (Exception ex)
@@ -272,6 +298,22 @@ namespace NfseGerenciador.ViewModels
 
         #region Lógica Principal
         private async Task AplicarFiltroCompleto(bool resetarPagina = false)
+        {
+            int version = ++_filterVersion;
+            await _loadGate.WaitAsync();
+            try
+            {
+                if (version != _filterVersion) return;
+                await ConsultarAsync(resetarPagina, version);
+            }
+            catch (Exception ex)
+            {
+                _logService.LogError(ex, "Consulta de notas");
+                MessageBox.Show("Não foi possível atualizar as notas. Confira a conexão com o banco.", "Consulta", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+            finally { _loadGate.Release(); }
+        }
+        private async Task ConsultarAsync(bool resetarPagina, int version)
         {
             if (resetarPagina)
             {
@@ -314,15 +356,25 @@ namespace NfseGerenciador.ViewModels
                                              n.TomadorCpfCnpj.Replace(".", "").Replace("-", "").Replace("/", "").Contains(filtro));
                 }
 
-                TotalItems = await query.CountAsync();
+                var totalItems = await query.CountAsync();
+                var total = await query.SumAsync(n => (decimal?)n.ValorLiquidoNfse) ?? 0m;
+                var pending = await query.CountAsync(n => !n.EstaPago);
+                if (version != _filterVersion) return;
+                TotalItems = totalItems;
+                TotalFiltrado = total;
+                PendentesFiltradas = pending;
+                CurrentPage = Math.Clamp(CurrentPage, 1, TotalPages);
 
                 var resultados = await query.OrderByDescending(n => n.DataEmissao)
                                             .ThenBy(n => n.Numero)
                                             .Skip((CurrentPage - 1) * PageSize)
                                             .Take(PageSize)
                                             .ToListAsync();
+                if (version != _filterVersion) return;
+                int? selectedId = NfseSelecionada?.Id;
                 Nfses.Clear();
                 resultados.ForEach(n => Nfses.Add(n));
+                NfseSelecionada = Nfses.FirstOrDefault(n => n.Id == selectedId);
 
                 CommandManager.InvalidateRequerySuggested();
             }
@@ -337,6 +389,8 @@ namespace NfseGerenciador.ViewModels
 
         private async void CarregarDetalhesPagamento()
         {
+            var selecionada = NfseSelecionada;
+            IsDetalhesVisible = false;
             if (NfseSelecionada == null)
             {
                 IsDetalhesVisible = false;
@@ -348,11 +402,17 @@ namespace NfseGerenciador.ViewModels
             DetalhesDataPagamento = NfseSelecionada.DataPagamentoEfetivo ?? (DetalhesEstaPago ? DateTime.Today : (DateTime?)null);
             DetalhesTipoRecebimento = NfseSelecionada.PagamentoId.HasValue ? TiposPagamento.FirstOrDefault(p => p.Id == NfseSelecionada.PagamentoId) : null;
 
-            using (var context = _contextFactory.CreateDbContext())
+            try
             {
-                var parcelas = await context.NfseParcelas.Where(p => p.NfseId == NfseSelecionada.Id).ToListAsync();
+                using var context = _contextFactory.CreateDbContext();
+                var parcelas = await context.NfseParcelas.Where(p => p.NfseId == selecionada.Id).OrderBy(p => p.NumeroParcela).ToListAsync();
+                if (!ReferenceEquals(selecionada, NfseSelecionada)) return;
+                selecionada.Parcelas = parcelas;
+                _selectedState = NfseGerenciador.Services.ImportacaoBaixas.ConciliadorBaixas.Estado(selecionada);
+                OnPropertyChanged(nameof(NfseSelecionada));
                 DetalhesNumParcelas = parcelas.Any() ? parcelas.Count : 1;
             }
+            catch (Exception ex) { _logService.LogError(ex, "Carregar parcelas"); return; }
 
             DetalhesEhAVista = DetalhesNumParcelas <= 1;
             IsDetalhesVisible = true;

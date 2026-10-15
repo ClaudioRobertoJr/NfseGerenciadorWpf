@@ -64,7 +64,7 @@ public sealed class LeitorRelatorioBaixas
                     var history = Get("HISTORICO").Valor.Trim();
                     var normalized = Normalizar(history);
                     if (string.IsNullOrWhiteSpace(history) && string.IsNullOrWhiteSpace(Get("DATA").Valor)) continue;
-                    if (normalized.StartsWith("SALDOANTERIOR") || normalized.StartsWith("TOTAL") || normalized == "HISTORICO") continue;
+                    if (normalized.StartsWith("SALDOANTERIOR") || normalized.StartsWith("SALDOATUAL") || normalized.StartsWith("TOTAL") || normalized == "HISTORICO") continue;
                     var errors = new List<string>();
                     var date = LerData(Get("DATA"), date1904);
                     if (date is null) errors.Add("Data inválida: " + Get("DATA").Valor);

@@ -81,5 +81,10 @@ public class LeitorRelatorioBaixasTests
         using var s=new MemoryStream([1,2,3]);
         Assert.Throws<InvalidDataException>(()=>new LeitorRelatorioBaixas().Ler(s));
     }
+    [Fact] public void Closing_balance_is_not_a_receipt()
+    {
+        using var s=Workbook(history:"*** SALDO ATUAL ...");
+        Assert.Empty(new LeitorRelatorioBaixas().Ler(s).Lancamentos);
+    }
 }
 
