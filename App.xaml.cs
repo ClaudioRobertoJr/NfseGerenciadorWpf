@@ -1,93 +1,72 @@
-﻿// NfseGerenciador/App.xaml.cs
+using System.Globalization;
+using System.IO;
+using System.Windows;
+using System.Windows.Markup;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using NfseGerenciador.Services;
+using NfseGerenciador.Services.ImportacaoBaixas;
 using NfseGerenciador.ViewModels;
 using NfseGerenciador.Views;
-using System.Windows;
-using Microsoft.Extensions.Configuration;
-using System.IO;
-using Microsoft.EntityFrameworkCore;
-namespace NfseGerenciador
+namespace NfseGerenciador;
+public partial class App : Application
 {
-    public partial class App : Application
+    public static ServiceProvider ServiceProvider {get;private set;}=null!;
+    public static IConfiguration Configuration {get;private set;}=null!;
+    protected override async void OnStartup(StartupEventArgs e)
     {
-        // Torna o ServiceProvider acessível publicamente e estaticamente
-        public static ServiceProvider ServiceProvider { get; private set; }
-        public static IConfiguration Configuration { get; private set; } // Adicione esta linha
-
-        public App()
+        base.OnStartup(e);
+        ShutdownMode=ShutdownMode.OnExplicitShutdown;
+        CultureInfo.DefaultThreadCurrentCulture=CultureInfo.GetCultureInfo("pt-BR");
+        CultureInfo.DefaultThreadCurrentUICulture=CultureInfo.GetCultureInfo("pt-BR");
+        FrameworkElement.LanguageProperty.OverrideMetadata(typeof(FrameworkElement),new FrameworkPropertyMetadata(XmlLanguage.GetLanguage("pt-BR")));
+        try
         {
-            var builder = new ConfigurationBuilder()
-           .SetBasePath(Directory.GetCurrentDirectory())
-           .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
-
-            Configuration = builder.Build(); // Adicione esta linha
-
-            ServiceCollection services = new ServiceCollection();
-            ConfigureServices(services);
-            ServiceProvider = services.BuildServiceProvider();
-
-        }
-
-        private void ConfigureServices(IServiceCollection services)
-        {
+            Configuration=ConfiguracaoInstalacao.Carregar(AppContext.BaseDirectory);
+            var services=new ServiceCollection();
             services.AddSingleton(Configuration);
-
-
-            // Registra o DbContext para ser criado uma vez por requisição (escopo)
             services.AddDbContextFactory<ApplicationDbContext>();
-
-            // Registra os ViewModels para serem criados sempre que forem solicitados
+            services.AddSingleton<LogService>();
+            services.AddSingleton<NfseXmlParser>();
+            services.AddTransient<IImportadorBaixas,ImportadorBaixas>();
+            services.AddTransient<AtualizacaoBancoService>();
             services.AddTransient<GerenciadorNfseViewModel>();
             services.AddTransient<EmpresaClassificadaViewModel>();
             services.AddTransient<RelatoriosViewModel>();
             services.AddTransient<DashboardViewModel>();
             services.AddTransient<BackupRestoreViewModel>();
             services.AddTransient<ConfiguracoesViewModel>();
-            // Registra as Views (Janelas)
+            services.AddTransient<ImportacaoBaixasViewModel>();
             services.AddTransient<GerenciadorNfseWindow>();
             services.AddTransient<EmpresasClassificadasWindow>();
             services.AddTransient<RelatoriosWindow>();
             services.AddTransient<DashboardWindow>();
-            services.AddTransient<JanelaPrincipal>();
-            services.AddTransient<NfseXmlParser>();
             services.AddTransient<BackupRestoreWindow>();
             services.AddTransient<ConfiguracoesWindow>();
-
-            // Registra Serviços como Singleton (uma única instância para toda a aplicação)
-            services.AddSingleton<NfseXmlParser>();
-            services.AddSingleton<LogService>();
-        }
-
-        protected override void OnStartup(StartupEventArgs e)
-        {
-            base.OnStartup(e);
-            var contextFactory = ServiceProvider.GetService<IDbContextFactory<ApplicationDbContext>>();
-            using (var context = contextFactory.CreateDbContext())
+            services.AddTransient<ImportacaoBaixasWindow>();
+            services.AddTransient<JanelaPrincipal>();
+            ServiceProvider=services.BuildServiceProvider();
+            var updater=ServiceProvider.GetRequiredService<AtualizacaoBancoService>();
+            if((await updater.PendentesAsync()).Length>0)
             {
-                try
-                {
-                    context.Database.Migrate();
-                }
-                catch (Exception ex)
-                {
-                    // Loga o erro e informa ao usuário.
-                    var logService = ServiceProvider.GetService<LogService>();
-                    logService.LogError(ex, "Falha ao aplicar migrações do banco de dados na inicialização.");
-                    MessageBox.Show(
-                        $"Não foi possível conectar ou criar o banco de dados. Verifique se o SQL Server está em execução e se a configuração está correta.\n\nErro: {ex.Message}",
-                        "Erro de Banco de Dados",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Error);
-
-                    // Fecha a aplicação se não for possível configurar o banco de dados.
-                    Application.Current.Shutdown();
-                    return;
-                }
+                if(MessageBox.Show("Esta versão precisa acrescentar o histórico de baixas ao banco.\n\nAntes, será criado e verificado um backup na pasta configurada ou na pasta padrão do SQL Server. O banco atual será preservado.\n\nFeche as outras instâncias do programa. Deseja continuar?","Atualização do banco",MessageBoxButton.YesNo,MessageBoxImage.Question,MessageBoxResult.No)!=MessageBoxResult.Yes){Shutdown();return;}
+                var backup=await updater.AtualizarAsync();
+                MessageBox.Show("Atualização concluída. Backup verificado:\n"+backup,"Banco atualizado",MessageBoxButton.OK,MessageBoxImage.Information);
             }
-            // Abre a janela principal através do container de DI
-            var janelaPrincipal = ServiceProvider.GetService<JanelaPrincipal>();
-            janelaPrincipal.Show();
+            MainWindow=ServiceProvider.GetRequiredService<JanelaPrincipal>();
+            ShutdownMode=ShutdownMode.OnMainWindowClose;
+            MainWindow.Show();
+        }
+        catch(Exception ex)
+        {
+            new LogService().LogError(ex,"Inicialização/atualização");
+            MessageBox.Show(ex is FileNotFoundException or InvalidDataException or InvalidOperationException ? ex.Message :
+                "Não foi possível abrir ou atualizar o sistema. Confira a configuração, a conexão e as permissões de backup. Nenhum banco foi recriado. Detalhes no log.",
+                "NFSe — inicialização",MessageBoxButton.OK,MessageBoxImage.Error);
+            Shutdown(1);
         }
     }
+    protected override void OnExit(ExitEventArgs e){ServiceProvider?.Dispose();base.OnExit(e);}
 }
+

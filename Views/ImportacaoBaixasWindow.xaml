@@ -1,0 +1,56 @@
+<Window x:Class="NfseGerenciador.Views.ImportacaoBaixasWindow"
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+ Title="Importar baixas • NFSe" Width="1240" Height="760" MinWidth="900" MinHeight="560" WindowStartupLocation="CenterOwner"
+ Loaded="AoCarregar" Closing="AoFechar" Language="pt-BR">
+ <Window.Resources>
+  <DataTemplate x:Key="TabelaPrevia">
+   <DataGrid ItemsSource="{Binding}" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" SelectionMode="Single" IsReadOnly="False">
+    <DataGrid.Columns>
+     <DataGridTemplateColumn Header="Baixar" Width="60"><DataGridTemplateColumn.CellTemplate><DataTemplate>
+      <CheckBox IsChecked="{Binding Selecionada,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding Apta}" HorizontalAlignment="Center"/>
+     </DataTemplate></DataGridTemplateColumn.CellTemplate></DataGridTemplateColumn>
+     <DataGridTextColumn Header="Linha" Binding="{Binding Item.Origem.Linha}" Width="55" IsReadOnly="True"/>
+     <DataGridTextColumn Header="Nota" Binding="{Binding Item.Numero}" Width="70" IsReadOnly="True"/>
+     <DataGridTextColumn Header="Tomador" Binding="{Binding Item.Tomador}" Width="200" IsReadOnly="True"/>
+     <DataGridTextColumn Header="Valor NF" Binding="{Binding Item.ValorNota,StringFormat=C2}" Width="110" IsReadOnly="True"/>
+     <DataGridTextColumn Header="Crédito" Binding="{Binding Item.Origem.Credito,StringFormat=C2}" Width="110" IsReadOnly="True"/>
+     <DataGridTextColumn Header="Data relatório" Binding="{Binding Item.Origem.Data,StringFormat=dd/MM/yyyy}" Width="105" IsReadOnly="True"/>
+     <DataGridTextColumn Header="Pagamento" Binding="{Binding Item.TipoPagamento}" Width="95" IsReadOnly="True"/>
+     <DataGridTextColumn Header="Local" Binding="{Binding Item.Local}" Width="90" IsReadOnly="True"/>
+     <DataGridTextColumn Header="Conferência" Binding="{Binding Item.Motivo}" Width="350" IsReadOnly="True"/>
+     <DataGridTextColumn Header="Centro de custo" Binding="{Binding Item.Origem.Centro}" Width="230" IsReadOnly="True"/>
+     <DataGridTextColumn Header="Histórico original" Binding="{Binding Item.Origem.Historico}" Width="450" IsReadOnly="True"/>
+    </DataGrid.Columns>
+   </DataGrid>
+  </DataTemplate>
+ </Window.Resources>
+ <Grid Margin="24">
+  <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+  <StackPanel Margin="0,0,0,18"><TextBlock Text="Importar baixas" FontSize="26" FontWeight="SemiBold"/><TextBlock Text="Confira o relatório antes de confirmar. Nenhuma nota é alterada na prévia." Foreground="#64748B" Margin="0,6,0,0"/></StackPanel>
+  <Border Grid.Row="1" Style="{StaticResource PainelAgrupamentoStyle}">
+   <Grid IsEnabled="{Binding PodeEditar}"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="340"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+    <StackPanel><TextBlock Text="Relatório Excel" FontWeight="SemiBold"/><DockPanel><Button DockPanel.Dock="Right" Content="Escolher…" Click="EscolherArquivo" Style="{StaticResource BotaoSecundarioStyle}"/><TextBox Text="{Binding CaminhoArquivo}" IsReadOnly="True" VerticalContentAlignment="Center"/></DockPanel></StackPanel>
+    <StackPanel Grid.Column="1" Margin="12,0"><TextBlock Text="Prestador das notas" FontWeight="SemiBold"/><ComboBox x:Name="Prestadores" DisplayMemberPath="Rotulo" SelectedValuePath="Cnpj" SelectedValue="{Binding PrestadorCnpj,Mode=TwoWay}" MinWidth="260"/></StackPanel>
+    <Button Grid.Column="2" Content="Gerar prévia" Click="Preparar" IsEnabled="{Binding PodePreparar}" VerticalAlignment="Bottom" Style="{StaticResource BotaoPrimarioStyle}"/>
+   </Grid>
+  </Border>
+  <DockPanel Grid.Row="2" Margin="0,0,0,12" IsEnabled="{Binding PodeEditar}">
+   <StackPanel DockPanel.Dock="Right" Orientation="Horizontal"><Button Content="Selecionar aptas" Click="SelecionarTodas" Style="{StaticResource BotaoSecundarioStyle}"/><Button Content="Limpar seleção" Click="LimparSelecao" Style="{StaticResource BotaoSecundarioStyle}"/></StackPanel>
+   <TextBlock Text="Pix: 4889 / 230   •   Dinheiro: 132 / 108   •   SIPAG: manual" VerticalAlignment="Center" Foreground="#475569" TextWrapping="Wrap"/>
+  </DockPanel>
+  <TabControl Grid.Row="3" IsEnabled="{Binding PodeEditar}">
+   <TabItem Header="{Binding TituloAptas}"><ContentControl Content="{Binding Aptas}" ContentTemplate="{StaticResource TabelaPrevia}"/></TabItem>
+   <TabItem Header="{Binding TituloRevisao}"><ContentControl Content="{Binding Revisao}" ContentTemplate="{StaticResource TabelaPrevia}"/></TabItem>
+   <TabItem Header="{Binding TituloIgnoradas}"><ContentControl Content="{Binding Ignoradas}" ContentTemplate="{StaticResource TabelaPrevia}"/></TabItem>
+  </TabControl>
+  <Grid Grid.Row="4" Margin="0,18,0,0">
+   <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+   <ProgressBar Height="3" IsIndeterminate="True" Visibility="{Binding EstaOcupado,Converter={StaticResource BooleanToVisibilityConverter}}" Margin="0,0,0,10"/>
+   <DockPanel Grid.Row="1"><Button DockPanel.Dock="Right" Content="Confirmar baixas selecionadas" Click="Confirmar" IsEnabled="{Binding PodeConfirmar}" Style="{StaticResource BotaoPrimarioStyle}"/>
+    <StackPanel><StackPanel Orientation="Horizontal"><TextBlock Text="{Binding QuantidadeSelecionada,StringFormat={}{0} notas selecionadas}" FontWeight="SemiBold"/><TextBlock Text="{Binding ValorSelecionado,StringFormat=C2}" FontWeight="Bold" FontSize="20" Margin="20,0,0,0"/></StackPanel>
+     <TextBlock Text="{Binding Mensagem}" TextWrapping="Wrap" Foreground="#475569" Margin="0,5,20,0"/></StackPanel>
+   </DockPanel>
+  </Grid>
+ </Grid>
+</Window>
+
