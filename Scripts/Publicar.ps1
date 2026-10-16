@@ -16,5 +16,6 @@ $entries=@(Get-ChildItem -LiteralPath $app -Recurse -File | Where-Object {$_.Nam
 [pscustomobject]@{version='2.0.0';files=$entries} | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath (Join-Path $app 'manifest.json') -Encoding UTF8
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'Atualizar.ps1') -Destination $package
 Copy-Item -LiteralPath (Join-Path $repo 'docs/ATUALIZACAO.md') -Destination (Join-Path $package 'LEIA-ME.md')
+Copy-Item -LiteralPath (Join-Path $repo 'docs/VALIDACAO.md') -Destination (Join-Path $package 'VALIDACAO.md')
 Write-Output "Pacote criado em $package"
 

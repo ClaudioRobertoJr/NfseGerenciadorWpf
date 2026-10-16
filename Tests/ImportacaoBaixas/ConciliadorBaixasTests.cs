@@ -18,6 +18,9 @@ public class ConciliadorBaixasTests
     public void Card_receipts_stay_manual(string history) => Assert.NotEqual(StatusConciliacao.Apta,Match(Linha() with{Historico=history}).Status);
     [Theory] [InlineData("DOC. 8000")] [InlineData("NOTA 8000 E 8001")] [InlineData("NOTA 8000 / 8001")] [InlineData("NOTA 8000,8001")] [InlineData("NOTA 8000 NOTA 8001")]
     public void Ambiguous_or_DOC_numbers_do_not_pay(string history) => Assert.NotEqual(StatusConciliacao.Apta,Match(Linha() with{Historico=history}).Status);
+    [Theory] [InlineData("NOTA 8000.1", "8000")] [InlineData("NOTA 8.000", "8")] [InlineData("NOTA 8000 . 1", "8000")]
+    public void Dotted_reference_cannot_pay_a_numeric_prefix(string history, string number)
+    { var note=Nota(); note.Numero=number; Assert.Equal(StatusConciliacao.Revisao,Match(Linha() with{Historico=history},note).Status); }
     [Theory] [InlineData(99.99)] [InlineData(100.01)] [InlineData(0)] [InlineData(-100)]
     public void Divergent_or_nonpositive_credit_does_not_pay(double amount) => Assert.NotEqual(StatusConciliacao.Apta,Match(Linha() with{Credito=(decimal)amount}).Status);
     [Fact] public void Debit_is_not_a_receipt() => Assert.NotEqual(StatusConciliacao.Apta,Match(Linha() with{Debito=100}).Status);

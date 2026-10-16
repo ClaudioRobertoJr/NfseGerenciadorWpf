@@ -291,7 +291,7 @@ namespace NfseGerenciador.ViewModels
             FiltroDataInicial = null;
             FiltroDataFinal = null;
             FiltroTexto = "";
-            _filtroLocal = null; // Limpa o filtro de local também
+            FiltroLocal = "Todos";
             AplicarFiltroCompleto(true);
         }
         #endregion

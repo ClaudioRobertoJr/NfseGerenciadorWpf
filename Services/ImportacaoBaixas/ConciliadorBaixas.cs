@@ -67,7 +67,7 @@ public sealed class ConciliadorBaixas
         var matches=Referencia.Matches(history ?? "");
         if(matches.Count!=1) return null;
         var tail=history![(matches[0].Index+matches[0].Length)..];
-        if(Regex.IsMatch(tail,@"^\s*(?:[/,+;&-]|E\b|A\b)\s*\d",RegexOptions.IgnoreCase)) return null;
+        if(Regex.IsMatch(tail,@"^\s*(?:[./,+;&-]|E\b|A\b)\s*\d",RegexOptions.IgnoreCase)) return null;
         return NumeroNormal(matches[0].Groups["numero"].Value);
     }
     private static bool NomeDivergente(string history,string? customer)

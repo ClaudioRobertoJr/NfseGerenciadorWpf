@@ -1,5 +1,11 @@
 # NFS-e Gerenciador
 
+## Atualização 2.0
+
+Importação de baixas por Excel com prévia e conferência por nota, valor e data do relatório; novo layout; histórico transacional e atualização com backup verificado antes da migração.
+
+Consulte [como atualizar preservando o banco e a configuração](docs/ATUALIZACAO.md) e os [resultados e limites da validação](docs/VALIDACAO.md). O pacote é destinado a instalações existentes; não use o instalador antigo para atualizar. Testes de integração SQL ainda precisam ser executados em ambiente de testes.
+
 ![.NET](https://img.shields.io/badge/.NET-8-blueviolet) 
 ![C#](https://img.shields.io/badge/C%23-11-blue)
 ![WPF](https://img.shields.io/badge/WPF-Framework-blue)

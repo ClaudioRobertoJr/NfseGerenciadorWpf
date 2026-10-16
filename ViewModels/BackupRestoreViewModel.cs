@@ -74,7 +74,7 @@ namespace NfseGerenciador.ViewModels
                 try
                 {
                     string filePath = saveFileDialog.FileName;
-                    await new SqlBackupService(_configuration).CriarVerificadoAsync(filePath);
+                    filePath = await new SqlBackupService(_configuration).CriarVerificadoAsync(filePath);
 
                     StatusMessage = $"Backup concluído com sucesso em: {filePath}";
                     MessageBox.Show(StatusMessage, "Sucesso", MessageBoxButton.OK, MessageBoxImage.Information);

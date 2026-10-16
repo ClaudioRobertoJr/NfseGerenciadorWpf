@@ -44,6 +44,8 @@ A parcela única pendente criada pela importação XML pode ser baixada, mantend
 
 ## Recuperação
 
+O backup manual acrescenta um identificador ao nome escolhido para sempre gerar um arquivo próprio, sem anexar novos backups a um arquivo antigo. Use o caminho exibido na mensagem de sucesso para localizar o `.bak` criado. Os caminhos de backup continuam sendo interpretados pelo servidor SQL.
+
 A pasta `nfse-backup-...` contém os binários anteriores e uma cópia da configuração, não o backup SQL. Se a cópia do programa falhar, siga a mensagem do atualizador e não abra uma instalação parcialmente copiada.
 
 Restaurar os binários não desfaz uma migração do banco. A restauração de banco é uma operação separada e substitui dados; use o backup SQL correto com orientação técnica. Nunca restaure um banco vazio para atualizar o sistema.

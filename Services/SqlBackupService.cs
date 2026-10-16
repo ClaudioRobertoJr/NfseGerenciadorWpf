@@ -4,6 +4,9 @@ using Microsoft.Extensions.Configuration;
 namespace NfseGerenciador.Services;
 public sealed class SqlBackupService(IConfiguration config)
 {
+    public static string CaminhoExclusivo(string arquivo) => Path.Combine(
+        Path.GetDirectoryName(arquivo) ?? "",
+        $"{Path.GetFileNameWithoutExtension(arquivo)}_{Guid.NewGuid():N}.bak");
     public async Task<string> CriarVerificadoAsync(string? arquivo=null,CancellationToken ct=default)
     {
         var builder=new SqlConnectionStringBuilder(config.GetConnectionString("DefaultConnection"));
@@ -25,6 +28,7 @@ public sealed class SqlBackupService(IConfiguration config)
             // SQL Server resolves this path on its own machine; do not create a client-side directory.
             arquivo=folder.TrimEnd('\\','/')+@"\"+$"NFSe_{safe}_{DateTime.Now:yyyyMMdd_HHmmss}_{Guid.NewGuid():N}.bak";
         }
+        else arquivo=CaminhoExclusivo(arquivo);
         string quoted="["+db.Replace("]","]]")+"]";
         using(var cmd=new SqlCommand($"BACKUP DATABASE {quoted} TO DISK=@path WITH COPY_ONLY, CHECKSUM, NOINIT;",connection))
         {

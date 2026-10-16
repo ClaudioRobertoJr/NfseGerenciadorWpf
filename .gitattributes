@@ -1,2 +1,3 @@
 Instalador/** export-ignore
 .superpowers/** export-ignore
+appsettings.json export-ignore
