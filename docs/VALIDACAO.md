@@ -1,5 +1,9 @@
 # Validação da versão 2.0 — 16/10/2026
 
+## Versão 2.0.3 — cadastros equivalentes de Dinheiro
+
+101 testes encontrados: 88 aprovados, 13 SQL ignorados, nenhuma falha. Dois testes reproduziram antes da correção o bloqueio com 1.102 cadastros de dinheiro equivalentes e com candidatos incompatíveis de menor ID. A resolução agora seleciona o menor ID somente entre cadastros compatíveis, independentemente da ordem da consulta. Teste SQL de preservação de pagamentos históricos acrescentado, não executado por ausência de instância. Revisão direcionada sem achados importantes; não há migração ou limpeza de registros.
+
 ## Versão 2.0.2 — 19/10/2026
 
 98 testes encontrados: 86 aprovados, 12 SQL ignorados, nenhuma falha. Quatro regressões reproduziram o bloqueio de seleção de avisos nome/data e a ausência da marcação de notas já pagas antes da correção. Cobertos checkbox real WPF habilitado em Conferir, seleção múltipla sem formulário, totais, remoção imediata das baixadas e ocultação de pagas de todas as abas. A revalidação do lote aceita avisos selecionáveis e mantém bloqueios financeiros. Teste SQL de baixa de duas notas em Conferir sem aprovação individual acrescentado, não executado por ausência de instância local. Sem nova migração de esquema.

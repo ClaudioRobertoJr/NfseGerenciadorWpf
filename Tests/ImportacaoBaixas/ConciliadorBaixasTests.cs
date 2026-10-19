@@ -43,8 +43,23 @@ public class ConciliadorBaixasTests
     {var n=Nota();n.Id=2;var p=new ConciliadorBaixas().Conciliar(new("H",[Linha()],[]),[Nota(),n],Pagamentos(),Cnpj);Assert.Equal(StatusConciliacao.Revisao,p.Itens[0].Status);}
     [Fact] public void Limits_match_to_selected_provider()
     {var n=Nota();n.Id=2;n.PrestadorCnpj="99999999000199";var p=new ConciliadorBaixas().Conciliar(new("H",[Linha()],[]),[Nota(),n],Pagamentos(),Cnpj);Assert.Equal(1,p.Itens[0].NfseId);Assert.Equal(StatusConciliacao.Apta,p.Itens[0].Status);}
-    [Fact] public void Missing_or_ambiguous_payment_is_not_assumed()
-    {Assert.Equal(StatusConciliacao.Revisao,Match(pagamentos:[]).Status);Assert.Equal(StatusConciliacao.Revisao,Match(pagamentos:[Pagamentos()[0],Pagamentos()[0]]).Status);}
+    [Fact] public void Missing_payment_is_not_assumed()
+    {Assert.Equal(StatusConciliacao.Revisao,Match(pagamentos:[]).Status);}
+    [Fact] public void Equivalent_cash_duplicates_choose_lowest_id_independent_of_order_without_changing_records()
+    {
+        var payments=Enumerable.Range(1,1102).Select(id=>new Pagamento{Id=id,TipoRecebimento=id==1?"Dinheiro":"DINHEIRO",EhAVista=true,NumeroParcelas=1}).Reverse().ToArray();
+        foreach(var source in new[]{payments,payments.Reverse().ToArray()}){
+            var item=Match(Linha() with{Contrapartida="132"},pagamentos:source);
+            Assert.Equal(StatusConciliacao.Apta,item.Status);Assert.Equal(1,item.PagamentoId);
+        }
+        Assert.Equal(1102,payments.Length);Assert.All(payments,p=>Assert.Equal(1,p.NumeroParcelas));
+    }
+    [Fact] public void Canonical_payment_must_still_match_type_and_cash_terms()
+    {
+        Pagamento[] payments=[new(){Id=1,TipoRecebimento="Dinheiro",EhAVista=false,NumeroParcelas=1},new(){Id=2,TipoRecebimento="Dinheiro",EhAVista=true,NumeroParcelas=2},new(){Id=3,TipoRecebimento="Pix",EhAVista=true,NumeroParcelas=1},new(){Id=20,TipoRecebimento=" DINHEIRO ",EhAVista=true,NumeroParcelas=null},new(){Id=30,TipoRecebimento="Dinheiro",EhAVista=true,NumeroParcelas=1}];
+        Assert.Equal(20,Match(Linha() with{Contrapartida="108"},pagamentos:payments).PagamentoId);
+        Assert.False(Match(Linha() with{Contrapartida="108"},pagamentos:payments.Take(3).ToArray()).PodeBaixar);
+    }
     [Fact] public void Laboratory_is_preserved() => Assert.Equal(LocalPagamento.Laboratorio,Match(Linha() with{Centro="1.1.2.035 LABORATORIO DE ANALISES CLINIC"}).Local);
     [Fact] public void Fingerprint_ignores_file_position_but_not_payment_details()
     {var a=Match();var b=Match(Linha() with{Id=500,Linha=99,Planilha="Outra"});var c=Match(Linha() with{Data=new(2026,10,14)});Assert.Equal(a.Impressao,b.Impressao);Assert.NotEqual(a.Impressao,c.Impressao);}

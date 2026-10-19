@@ -52,9 +52,11 @@ public sealed class ConciliadorBaixas
                 else
                 {
                     string type=row.Contrapartida switch { "4889" or "230" => "Pix", "132" or "108" => "Dinheiro", _ => "" };
-                    var payment=pagamentos.Where(p=>LeitorRelatorioBaixas.Normalizar(p.TipoRecebimento)==LeitorRelatorioBaixas.Normalizar(type) && p.EhAVista && p.NumeroParcelas is null or 1).ToList();
+                    // Equivalent cash registrations can exist in legacy databases. Reuse one deterministically;
+                    // never delete or reassign historical payment registrations.
+                    var payment=pagamentos.Where(p=>LeitorRelatorioBaixas.Normalizar(p.TipoRecebimento)==LeitorRelatorioBaixas.Normalizar(type) && p.EhAVista && p.NumeroParcelas is null or 1).OrderBy(p=>p.Id).FirstOrDefault();
                     if(type.Length==0) item=Review("Contrapartida sem regra de pagamento.");
-                    else if(payment.Count!=1) item=Review("Forma de pagamento à vista ausente ou duplicada: "+type+".");
+                    else if(payment is null) item=Review("Forma de pagamento à vista não cadastrada: "+type+" (à vista, uma parcela).");
                     else
                     {
                         var warnings=new List<string>();
@@ -63,7 +65,7 @@ public sealed class ConciliadorBaixas
                         item=item with { Status=warnings.Count>0 ? StatusConciliacao.Revisao : StatusConciliacao.Apta,
                             PermiteBaixaEmLote=warnings.Count>0,
                             Motivo=warnings.Count>0 ? string.Join("; ",warnings)+". Se reconhecer o recebimento, marque Baixar." : manual is null ? "Nota e valor conferidos." : "Conferida manualmente: "+manual.Justificativa,
-                            TipoPagamento=type,PagamentoId=payment[0].Id };
+                            TipoPagamento=type,PagamentoId=payment.Id };
                     }
                 }
             }

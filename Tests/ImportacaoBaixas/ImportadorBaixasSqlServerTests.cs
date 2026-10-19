@@ -49,6 +49,20 @@ public class ImportadorBaixasSqlServerTests
         Assert.All(await check.RegistrosBaixas.ToListAsync(),r=>Assert.Contains("Selecionada pelo usu",r.EstadoPosterior));
         await Assert.ThrowsAsync<InvalidOperationException>(()=>svc.ConfirmarAsync(p,[1,2]));
     }
+    [SqlServerFact] public async Task Cash_duplicates_are_reused_without_deleting_or_relinking_existing_payments()
+    {
+        await using var f=new SqlServerFixture();await Setup(f);int duplicateId;
+        await using(var db=f.CreateDbContext())
+        {
+            var duplicate=new NfseGerenciador.Models.Pagamento{TipoRecebimento="DINHEIRO",EhAVista=true,NumeroParcelas=1};db.Pagamentos.Add(duplicate);await db.SaveChangesAsync();duplicateId=duplicate.Id;
+            var historical=ConciliadorBaixasTests.Nota();historical.Id=0;historical.Numero="7777";historical.EstaPago=true;historical.PagamentoId=duplicateId;db.Nfses.Add(historical);await db.SaveChangesAsync();
+        }
+        await using var read=f.CreateDbContext();
+        var p=new ConciliadorBaixas().Conciliar(new("H",[ConciliadorBaixasTests.Linha() with{Contrapartida="132"}],[]),await read.Nfses.Include(n=>n.Parcelas).ToListAsync(),await read.Pagamentos.ToListAsync(),ConciliadorBaixasTests.Cnpj);
+        Assert.Equal(1,p.Itens[0].PagamentoId);await new ImportadorBaixas(f).ConfirmarAsync(p,[1]);
+        await using var check=f.CreateDbContext();Assert.Equal(1,(await check.Nfses.SingleAsync(n=>n.Numero=="8000")).PagamentoId);
+        Assert.Equal(duplicateId,(await check.Nfses.SingleAsync(n=>n.Numero=="7777")).PagamentoId);Assert.Equal(8,await check.Pagamentos.CountAsync());
+    }
     [SqlServerFact] public async Task Commits_note_parcel_and_history_together()
     {
         await using var f=new SqlServerFixture();var preview=await Setup(f);

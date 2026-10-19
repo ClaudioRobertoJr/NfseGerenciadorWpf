@@ -1,4 +1,6 @@
-# Atualização do NFSe — versão 2.0.2
+# Atualização do NFSe — versão 2.0.3
+
+Corrigido o bloqueio de Dinheiro quando existem vários cadastros equivalentes. O importador usa o menor ID entre os registros do mesmo tipo normalizado, à vista e com uma parcela (ou parcelas nulas). Não exclui registros nem modifica os vínculos dos pagamentos anteriores. Nenhum comando SQL ou nova migração é necessário. Após atualizar, gere novamente a prévia do relatório.
 
 Esta correção não acrescenta migrações ao banco da versão 2.0. Permite selecionar várias linhas em Conferir e oculta notas já baixadas/importadas de todas as abas. Mantém a correção do fechamento no duplo clique. Atualize com o mesmo script após fechar o aplicativo.
 
