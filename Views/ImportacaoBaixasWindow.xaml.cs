@@ -32,10 +32,11 @@ public partial class ImportacaoBaixasWindow : Window
     private async void Confirmar(object sender,RoutedEventArgs e)
     {
         if(!vm.PodeConfirmar)return;
-        if(MessageBox.Show(this,$"Confirmar a baixa de {vm.QuantidadeSelecionada} notas, no total de {vm.ValorSelecionado:C2}?\n\nCada nota usará a data de seu lançamento no relatório.","Confirmar lote",MessageBoxButton.YesNo,MessageBoxImage.Question,MessageBoxResult.No)!=MessageBoxResult.Yes)return;
+        if(MessageBox.Show(this,$"Confirmar a baixa de {vm.QuantidadeSelecionada} notas, no total de {vm.ValorSelecionado:C2}?\n\n{vm.QuantidadeConferirSelecionada} selecionadas na aba Conferir: você está aceitando as divergências de nome/data dessas linhas.\n\nCada nota usará a data de seu lançamento no relatório.","Confirmar lote",MessageBoxButton.YesNo,MessageBoxImage.Question,MessageBoxResult.No)!=MessageBoxResult.Yes)return;
         try{await vm.ConfirmarAsync();HouveBaixas=true;}catch(Exception ex){Erro(ex);}
     }
     private void SelecionarTodas(object sender,RoutedEventArgs e)=>vm.SelecionarAptas(true);
+    private void SelecionarConferir(object sender,RoutedEventArgs e)=>vm.SelecionarConferir();
     private async void RevisarLinha(object sender,RoutedEventArgs e)
     {
         if(sender is not FrameworkElement {DataContext: LinhaBaixa linha} || !linha.PodeRevisar)return;

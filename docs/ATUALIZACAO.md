@@ -1,10 +1,10 @@
-# Atualização do NFSe — versão 2.0.1
+# Atualização do NFSe — versão 2.0.2
 
-Esta correção não acrescenta migrações ao banco da versão 2.0. Corrige o fechamento no duplo clique da prévia e adiciona conferência manual. Atualize com o mesmo script, após fechar o aplicativo. Se a versão 2.0 já foi aplicada ao banco, não haverá nova migração por causa deste patch.
+Esta correção não acrescenta migrações ao banco da versão 2.0. Permite selecionar várias linhas em Conferir e oculta notas já baixadas/importadas de todas as abas. Mantém a correção do fechamento no duplo clique. Atualize com o mesmo script após fechar o aplicativo.
 
-Na aba **Conferir**, clique no botão **Conferir** da linha, informe o número da nota correta e uma justificativa. Confira tomador, valor, data do relatório e forma de pagamento na confirmação. A linha será movida para **Aptas**, já selecionada; somente o botão **Confirmar baixas selecionadas** grava a baixa. A justificativa fica no histórico do lote.
+Na aba **Conferir**, marque diretamente os quadrados **Baixar** das notas que reconhecer, ou use **Selecionar em Conferir**. Não é preciso abrir cada linha nem informar justificativa individual. Uma única confirmação grava todas as selecionadas, usando a data do relatório. As notas baixadas desaparecem da prévia e não reaparecem em Ignoradas ao importar novamente.
 
-É possível confirmar manualmente associação, nome e data divergentes. A nota deve existir no mesmo prestador: se estiver ausente, importe seu XML primeiro e gere outra prévia. Valores diferentes, parcelamentos incompatíveis, cartões, duplicidades e notas já pagas continuam bloqueados nesse fluxo.
+Divergências de nome e data mantêm a linha em Conferir, mas permitem seleção quando número, valor, forma de pagamento e parcelas são compatíveis. O botão **Conferir** continua opcional nas abas Conferir/Ignoradas para localizar uma associação e registrar explicação. A nota deve existir no mesmo prestador: se estiver ausente, importe seu XML primeiro. Valores diferentes, parcelamentos incompatíveis, cartões e duplicidades continuam bloqueados nesse fluxo.
 
 Este pacote atualiza uma instalação existente do NFSe em Windows x64. Ele contém o aplicativo e o runtime .NET necessários. O SQL Server continua sendo o da instalação atual.
 
@@ -44,7 +44,7 @@ Se não houver conexão, configuração válida ou histórico de migrações rec
 3. Clique em **Gerar prévia**. Consulte as abas **Aptas**, **Conferir** e **Ignoradas**, inclusive as colunas de motivo, histórico e centro de custo.
 4. Confirme apenas as linhas desejadas. A data do recebimento será a **data da linha do relatório**.
 
-Regras: contrapartidas 4889/230 → Pix; 132/108 → Dinheiro. Local Particular, exceto laboratório. SIPAG/cartões ficam manuais. DOC não é tratado como nota fiscal. Notas já pagas, lançamentos importados, valores diferentes, nomes divergentes, datas anteriores à emissão e parcelamentos incompatíveis não recebem baixa automática. Vários lançamentos para uma nota não são somados silenciosamente.
+Regras: contrapartidas 4889/230 → Pix; 132/108 → Dinheiro. Local Particular, exceto laboratório. SIPAG/cartões ficam manuais. DOC não é tratado como nota fiscal. Já pagas/importadas ficam ocultas. Nome divergente ou data anterior à emissão exigem apenas selecionar a linha em Conferir e confirmar o lote. Valores diferentes e parcelamentos incompatíveis ficam bloqueados. Vários lançamentos para uma nota não são somados silenciosamente.
 
 A parcela única pendente criada pela importação XML pode ser baixada, mantendo seu registro. Parcelamentos reais e estados inconsistentes ficam para revisão. O lote revalida os dados no momento da confirmação; se a nota mudou, a operação é interrompida e deve ser gerada outra prévia.
 

@@ -8,11 +8,11 @@
     <DataGrid.RowDetailsTemplate><DataTemplate><Border Background="#FFF7ED" Padding="12"><StackPanel>
      <TextBlock Text="{Binding Item.Motivo}" TextWrapping="Wrap" FontWeight="SemiBold"/>
      <TextBlock Text="{Binding Item.Origem.Historico}" TextWrapping="Wrap" Margin="0,5,0,0"/>
-     <TextBlock Text="Use Conferir para localizar a nota e justificar a divergência. Notas ausentes precisam do XML; valores diferentes e parcelamentos exigem baixa pelo cadastro da nota." TextWrapping="Wrap" Margin="0,5,0,0"/>
+     <TextBlock Text="Se reconhecer o recebimento, marque Baixar e confirme junto com as demais. O botão Conferir é opcional para corrigir a associação. Notas ausentes precisam do XML; valores diferentes e parcelamentos exigem baixa pelo cadastro da nota." TextWrapping="Wrap" Margin="0,5,0,0"/>
     </StackPanel></Border></DataTemplate></DataGrid.RowDetailsTemplate>
     <DataGrid.Columns>
      <DataGridTemplateColumn Header="Baixar" Width="60"><DataGridTemplateColumn.CellTemplate><DataTemplate>
-      <CheckBox IsChecked="{Binding Selecionada,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding Apta}" HorizontalAlignment="Center"/>
+      <CheckBox IsChecked="{Binding Selecionada,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding PodeSelecionar}" ToolTip="{Binding Item.Motivo}" HorizontalAlignment="Center"/>
      </DataTemplate></DataGridTemplateColumn.CellTemplate></DataGridTemplateColumn>
      <DataGridTemplateColumn Header="Revisão" Width="100"><DataGridTemplateColumn.CellTemplate><DataTemplate>
       <Button Content="Conferir" Click="RevisarLinha" IsEnabled="{Binding PodeRevisar}" Padding="7,3" Margin="0"/>
@@ -43,7 +43,7 @@
    </Grid>
   </Border>
   <DockPanel Grid.Row="2" Margin="0,0,0,12" IsEnabled="{Binding PodeEditar}">
-   <StackPanel DockPanel.Dock="Right" Orientation="Horizontal"><Button Content="Selecionar aptas" Click="SelecionarTodas" Style="{StaticResource BotaoSecundarioStyle}"/><Button Content="Limpar seleção" Click="LimparSelecao" Style="{StaticResource BotaoSecundarioStyle}"/></StackPanel>
+   <StackPanel DockPanel.Dock="Right" Orientation="Horizontal"><Button Content="Selecionar aptas" Click="SelecionarTodas" Style="{StaticResource BotaoSecundarioStyle}"/><Button Content="Selecionar em Conferir" Click="SelecionarConferir" Style="{StaticResource BotaoSecundarioStyle}"/><Button Content="Limpar seleção" Click="LimparSelecao" Style="{StaticResource BotaoSecundarioStyle}"/></StackPanel>
    <TextBlock Text="Pix: 4889 / 230   •   Dinheiro: 132 / 108   •   SIPAG: manual" VerticalAlignment="Center" Foreground="#475569" TextWrapping="Wrap"/>
   </DockPanel>
   <TabControl Grid.Row="3" IsEnabled="{Binding PodeEditar}">

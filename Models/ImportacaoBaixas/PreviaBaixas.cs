@@ -16,6 +16,9 @@ public sealed record ItemPrevia
     public string EstadoOriginal { get; init; } = "";
     public string Impressao { get; init; } = "";
     public ConferenciaManual? Conferencia { get; init; }
+    public bool PermiteBaixaEmLote { get; init; }
+    public bool JaBaixada { get; init; }
+    public bool PodeBaixar => !JaBaixada && (Status==StatusConciliacao.Apta || Status==StatusConciliacao.Revisao && PermiteBaixaEmLote);
 }
 public sealed record PreviaBaixas(RelatorioBaixas Relatorio, string PrestadorCnpj, IReadOnlyList<ItemPrevia> Itens)
 {

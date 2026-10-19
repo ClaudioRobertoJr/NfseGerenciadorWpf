@@ -29,7 +29,9 @@ public sealed class ConciliadorBaixas
                 Impressao=Impressao(row,provider), Conferencia=manual };
             ItemPrevia Review(string reason) => item with { Motivo=reason };
             var history = LeitorRelatorioBaixas.Normalizar(row.Historico);
-            if (history.Contains("SIPAG") || history.Contains("CARTAO"))
+            if (number.Length>0 && byNumber.TryGetValue(number,out var paidMatches) && paidMatches.Count==1 && paidMatches[0].EstaPago)
+                item=item with{Status=StatusConciliacao.Ignorada,JaBaixada=true,Motivo="Nota já paga."};
+            else if (history.Contains("SIPAG") || history.Contains("CARTAO"))
                 item = item with { Status=StatusConciliacao.Ignorada, Motivo="Cartão/SIPAG: baixa manual." };
             else if (row.Erro is not null) item=Review(row.Erro);
             else if (row.Data is null || row.Credito is null || row.Debito is null) item=Review("Data ou valor ausente.");
@@ -44,18 +46,25 @@ public sealed class ConciliadorBaixas
                 var note=matches[0];
                 item=item with { NfseId=note.Id, Tomador=note.TomadorRazaoSocial ?? "", ValorNota=note.ValorLiquidoNfse, EstadoOriginal=Estado(note) };
                 if (note.Excluida) item=Review("Nota excluída: não será baixada.");
-                else if (note.EstaPago) item=item with { Status=StatusConciliacao.Ignorada, Motivo="Nota já paga." };
+                else if (note.EstaPago) item=item with { Status=StatusConciliacao.Ignorada, JaBaixada=true, Motivo="Nota já paga." };
                 else if (note.ValorLiquidoNfse != row.Credito) item=Review("Crédito diferente do valor líquido da nota.");
-                else if (manual is null && row.Data.Value.Date < note.DataEmissao.Date) item=Review("Recebimento anterior à emissão: conferir.");
                 else if (!ParcelasCompativeis(note)) item=Review("Parcelamento ou pagamento anterior: conferir manualmente.");
-                else if (manual is null && NomeDivergente(row.Historico,note.TomadorRazaoSocial)) item=Review("Nome no histórico difere do tomador.");
                 else
                 {
                     string type=row.Contrapartida switch { "4889" or "230" => "Pix", "132" or "108" => "Dinheiro", _ => "" };
                     var payment=pagamentos.Where(p=>LeitorRelatorioBaixas.Normalizar(p.TipoRecebimento)==LeitorRelatorioBaixas.Normalizar(type) && p.EhAVista && p.NumeroParcelas is null or 1).ToList();
                     if(type.Length==0) item=Review("Contrapartida sem regra de pagamento.");
                     else if(payment.Count!=1) item=Review("Forma de pagamento à vista ausente ou duplicada: "+type+".");
-                    else item=item with { Status=StatusConciliacao.Apta, Motivo=manual is null ? "Nota e valor conferidos." : "Conferida manualmente: "+manual.Justificativa, TipoPagamento=type, PagamentoId=payment[0].Id };
+                    else
+                    {
+                        var warnings=new List<string>();
+                        if(manual is null && row.Data.Value.Date<note.DataEmissao.Date)warnings.Add("Recebimento anterior à emissão");
+                        if(manual is null && NomeDivergente(row.Historico,note.TomadorRazaoSocial))warnings.Add("Nome no histórico difere do tomador");
+                        item=item with { Status=warnings.Count>0 ? StatusConciliacao.Revisao : StatusConciliacao.Apta,
+                            PermiteBaixaEmLote=warnings.Count>0,
+                            Motivo=warnings.Count>0 ? string.Join("; ",warnings)+". Se reconhecer o recebimento, marque Baixar." : manual is null ? "Nota e valor conferidos." : "Conferida manualmente: "+manual.Justificativa,
+                            TipoPagamento=type,PagamentoId=payment[0].Id };
+                    }
                 }
             }
             items.Add(item);

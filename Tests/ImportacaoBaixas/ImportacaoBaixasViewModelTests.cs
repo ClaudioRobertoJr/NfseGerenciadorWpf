@@ -9,14 +9,30 @@ public class ImportacaoBaixasViewModelTests
     {
         public TaskCompletionSource<PreviaBaixas>? Pending;
         public TaskCompletionSource<ResultadoImportacao>? Saving;
-        public Task<PreviaBaixas> PrepararAsync(string c,string p,CancellationToken ct=default) => Pending?.Task ?? Task.FromResult(Preview());
-        public Task<ResultadoImportacao> ConfirmarAsync(PreviaBaixas p,IReadOnlyCollection<int> ids,CancellationToken ct=default) => Saving?.Task ?? Task.FromResult(new ResultadoImportacao(1,ids.Count,100));
+        public PreviaBaixas? Loaded;
+        public IReadOnlyCollection<int>? Submitted;
+        public Task<PreviaBaixas> PrepararAsync(string c,string p,CancellationToken ct=default) => Pending?.Task ?? Task.FromResult(Loaded ?? Preview());
+        public Task<ResultadoImportacao> ConfirmarAsync(PreviaBaixas p,IReadOnlyCollection<int> ids,CancellationToken ct=default) {Submitted=ids;return Saving?.Task ?? Task.FromResult(new ResultadoImportacao(1,ids.Count,100));}
         public Task<ItemPrevia> RevisarAsync(PreviaBaixas p,int id,string numero,string motivo,CancellationToken ct=default) => Task.FromResult(p.Itens.Single(i=>i.Origem.Id==id) with{Status=StatusConciliacao.Apta,NfseId=99,Conferencia=new(99,motivo)});
     }
     private static PreviaBaixas Preview() => new(new("H",[],[]),"12345678000190",[
         new(){Origem=ConciliadorBaixasTests.Linha(),Status=StatusConciliacao.Apta},
         new(){Origem=ConciliadorBaixasTests.Linha() with {Id=2,Credito=200},Status=StatusConciliacao.Revisao}]);
     private static ImportacaoBaixasViewModel VM(Service s) => new(s){CaminhoArquivo="arquivo.xlsx",PrestadorCnpj="12345678000190"};
+    [Fact] public async Task Selects_multiple_review_rows_without_dialog_and_removes_settled_rows()
+    {
+        var p=Preview();var baseItem=p.Itens[1];
+        var service=new Service{Loaded=p with{Itens=[
+            baseItem with{Origem=baseItem.Origem with{Id=2},PermiteBaixaEmLote=true},
+            baseItem with{Origem=baseItem.Origem with{Id=3},PermiteBaixaEmLote=true},
+            baseItem with{Origem=baseItem.Origem with{Id=4}},
+            baseItem with{Origem=baseItem.Origem with{Id=5},Status=StatusConciliacao.Ignorada,JaBaixada=true}]}};
+        var vm=VM(service);await vm.PrepararAsync();
+        Assert.Equal(3,vm.Itens.Count);Assert.Empty(vm.Ignoradas);Assert.Equal(0,vm.QuantidadeSelecionada);
+        vm.SelecionarConferir();Assert.Equal(2,vm.QuantidadeSelecionada);Assert.Equal(2,vm.QuantidadeConferirSelecionada);Assert.Equal(400m,vm.ValorSelecionado);
+        await vm.ConfirmarAsync();Assert.Equal(new[]{2,3},service.Submitted);Assert.Equal(4,Assert.Single(vm.Itens).Item.Origem.Id);
+        Assert.Empty(vm.Aptas);Assert.Empty(vm.Ignoradas);Assert.False(vm.PodeConfirmar);
+    }
     [Fact] public async Task Only_eligible_rows_are_selected_and_counted()
     {
         var vm=VM(new());await vm.PrepararAsync();

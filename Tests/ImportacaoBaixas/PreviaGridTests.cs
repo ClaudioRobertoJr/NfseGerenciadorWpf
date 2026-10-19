@@ -19,7 +19,7 @@ public class PreviaGridTests
             var xml=new XElement(root.Descendants(p+"DataTemplate").First());
             xml.Attributes().Where(a=>a.Name.LocalName=="Key").Remove();xml.Descendants().Attributes("Click").Remove();
             var grid=(DataGrid)((DataTemplate)XamlReader.Parse(xml.ToString())).LoadContent();
-            var row=new LinhaBaixa(new(){Origem=ConciliadorBaixasTests.Linha(),Status=StatusConciliacao.Apta});
+            var row=new LinhaBaixa(new(){Origem=ConciliadorBaixasTests.Linha(),Status=StatusConciliacao.Revisao,PermiteBaixaEmLote=true});
             grid.DataContext=new[]{row}.Where(_=>true);
             grid.Measure(new Size(1000,500));grid.Arrange(new Rect(0,0,1000,500));grid.UpdateLayout();
             grid.SelectedItem=row;grid.CurrentCell=new DataGridCellInfo(row,grid.Columns[0]);
@@ -27,6 +27,7 @@ public class PreviaGridTests
             var checkbox=(CheckBox)((DataGridTemplateColumn)grid.Columns[0]).CellTemplate.LoadContent();checkbox.DataContext=row;
             checkbox.Dispatcher.Invoke(()=>{},System.Windows.Threading.DispatcherPriority.DataBind);
             checkbox.GetBindingExpression(CheckBox.IsCheckedProperty)!.UpdateTarget();
+            Assert.True(checkbox.IsEnabled);
             checkbox.SetCurrentValue(CheckBox.IsCheckedProperty,false);checkbox.GetBindingExpression(CheckBox.IsCheckedProperty)!.UpdateSource();
             Assert.False(row.Selecionada);
             checkbox.SetCurrentValue(CheckBox.IsCheckedProperty,true);checkbox.GetBindingExpression(CheckBox.IsCheckedProperty)!.UpdateSource();

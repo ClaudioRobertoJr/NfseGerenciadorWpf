@@ -1,5 +1,9 @@
 # Validação da versão 2.0 — 16/10/2026
 
+## Versão 2.0.2 — 19/10/2026
+
+98 testes encontrados: 86 aprovados, 12 SQL ignorados, nenhuma falha. Quatro regressões reproduziram o bloqueio de seleção de avisos nome/data e a ausência da marcação de notas já pagas antes da correção. Cobertos checkbox real WPF habilitado em Conferir, seleção múltipla sem formulário, totais, remoção imediata das baixadas e ocultação de pagas de todas as abas. A revalidação do lote aceita avisos selecionáveis e mantém bloqueios financeiros. Teste SQL de baixa de duas notas em Conferir sem aprovação individual acrescentado, não executado por ausência de instância local. Sem nova migração de esquema.
+
 ## Correção 2.0.1 — conferência manual
 
 Resultado atualizado: 88 testes encontrados, 77 aprovados, 11 SQL ignorados, nenhuma falha. Reproduzido o erro anterior do grid: `InvalidOperationException: EditItem não é permitido para esse modo de exibição` com a configuração antiga; a configuração corrigida passa mantendo o checkbox funcional. Cobertos associação manual, bloqueios financeiros, confirmação/cancelamento, preservação de seleção e inicialização padrão do atualizador no Windows PowerShell. Dois novos testes SQL cobrem auditoria e rejeição de nota alterada após conferência, mas não foram executados neste ambiente. Revisão direcionada do patch concluída sem achados importantes residuais. Sem mudança de esquema do banco nesta correção.

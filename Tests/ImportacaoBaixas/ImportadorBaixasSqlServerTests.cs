@@ -36,6 +36,19 @@ public class ImportadorBaixasSqlServerTests
         await Assert.ThrowsAsync<InvalidOperationException>(()=>svc.ConfirmarAsync(p,[1]));
         await using var check=f.CreateDbContext();Assert.Empty(await check.RegistrosBaixas.ToListAsync());Assert.False((await check.Nfses.SingleAsync()).EstaPago);
     }
+    [SqlServerFact] public async Task Settles_multiple_review_warnings_directly_without_individual_approval()
+    {
+        await using var f=new SqlServerFixture();await Setup(f);
+        await using(var db=f.CreateDbContext()){var n=ConciliadorBaixasTests.Nota();n.Id=0;n.Numero="8001";db.Nfses.Add(n);await db.SaveChangesAsync();}
+        var row=ConciliadorBaixasTests.Linha() with{Data=new DateTime(2025,1,1)};
+        await using var read=f.CreateDbContext();
+        var p=new ConciliadorBaixas().Conciliar(new("H",[row,row with{Id=2,Historico="NOTA 8001 - OUTRO NOME"}],[]),await read.Nfses.Include(n=>n.Parcelas).ToListAsync(),await read.Pagamentos.ToListAsync(),ConciliadorBaixasTests.Cnpj);
+        Assert.All(p.Itens,i=>{Assert.Equal(StatusConciliacao.Revisao,i.Status);Assert.True(i.PodeBaixar);Assert.Null(i.Conferencia);});
+        var svc=new ImportadorBaixas(f);var result=await svc.ConfirmarAsync(p,[1,2]);Assert.Equal(2,result.Quantidade);
+        await using var check=f.CreateDbContext();Assert.Equal(2,await check.Nfses.CountAsync(n=>n.EstaPago));
+        Assert.All(await check.RegistrosBaixas.ToListAsync(),r=>Assert.Contains("Selecionada pelo usu",r.EstadoPosterior));
+        await Assert.ThrowsAsync<InvalidOperationException>(()=>svc.ConfirmarAsync(p,[1,2]));
+    }
     [SqlServerFact] public async Task Commits_note_parcel_and_history_together()
     {
         await using var f=new SqlServerFixture();var preview=await Setup(f);
