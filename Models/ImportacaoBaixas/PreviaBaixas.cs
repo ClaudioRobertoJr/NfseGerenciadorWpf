@@ -1,5 +1,6 @@
 namespace NfseGerenciador.Models.ImportacaoBaixas;
 public enum StatusConciliacao { Apta, Revisao, Ignorada }
+public sealed record ConferenciaManual(int NotaId, string Justificativa);
 public sealed record ItemPrevia
 {
     public required LancamentoRelatorio Origem { get; init; }
@@ -14,6 +15,7 @@ public sealed record ItemPrevia
     public LocalPagamento Local { get; init; }
     public string EstadoOriginal { get; init; } = "";
     public string Impressao { get; init; } = "";
+    public ConferenciaManual? Conferencia { get; init; }
 }
 public sealed record PreviaBaixas(RelatorioBaixas Relatorio, string PrestadorCnpj, IReadOnlyList<ItemPrevia> Itens)
 {

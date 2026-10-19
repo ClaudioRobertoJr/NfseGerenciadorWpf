@@ -1,4 +1,10 @@
-# Atualização do NFSe — versão 2.0
+# Atualização do NFSe — versão 2.0.1
+
+Esta correção não acrescenta migrações ao banco da versão 2.0. Corrige o fechamento no duplo clique da prévia e adiciona conferência manual. Atualize com o mesmo script, após fechar o aplicativo. Se a versão 2.0 já foi aplicada ao banco, não haverá nova migração por causa deste patch.
+
+Na aba **Conferir**, clique no botão **Conferir** da linha, informe o número da nota correta e uma justificativa. Confira tomador, valor, data do relatório e forma de pagamento na confirmação. A linha será movida para **Aptas**, já selecionada; somente o botão **Confirmar baixas selecionadas** grava a baixa. A justificativa fica no histórico do lote.
+
+É possível confirmar manualmente associação, nome e data divergentes. A nota deve existir no mesmo prestador: se estiver ausente, importe seu XML primeiro e gere outra prévia. Valores diferentes, parcelamentos incompatíveis, cartões, duplicidades e notas já pagas continuam bloqueados nesse fluxo.
 
 Este pacote atualiza uma instalação existente do NFSe em Windows x64. Ele contém o aplicativo e o runtime .NET necessários. O SQL Server continua sendo o da instalação atual.
 

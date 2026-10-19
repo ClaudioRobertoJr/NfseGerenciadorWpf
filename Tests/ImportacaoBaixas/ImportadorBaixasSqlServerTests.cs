@@ -14,6 +14,28 @@ public class ImportadorBaixasSqlServerTests
         db.Nfses.Add(n);await db.SaveChangesAsync();
         return new ConciliadorBaixas().Conciliar(new("HASH",[ConciliadorBaixasTests.Linha()],[]),[n],await db.Pagamentos.ToListAsync(),ConciliadorBaixasTests.Cnpj);
     }
+    private static PreviaBaixas NeedsReview(PreviaBaixas p)
+    {
+        var row=p.Itens[0].Origem with{Historico="NOTA 9999 - NOME DIVERGENTE",Data=new DateTime(2025,1,1)};
+        return p with{Relatorio=p.Relatorio with{Lancamentos=[row]},Itens=[p.Itens[0] with{Origem=row,Status=StatusConciliacao.Revisao}]};
+    }
+    [SqlServerFact] public async Task Manual_review_keeps_original_receipt_and_audits_explicit_association()
+    {
+        await using var f=new SqlServerFixture();var p=NeedsReview(await Setup(f));var svc=new ImportadorBaixas(f);
+        var approved=await svc.RevisarAsync(p,1,"8000","Recibo conferido");p=p with{Itens=[approved]};
+        await svc.ConfirmarAsync(p,[1]);await using var db=f.CreateDbContext();var audit=await db.RegistrosBaixas.SingleAsync();
+        Assert.Equal("NOTA 9999 - NOME DIVERGENTE",audit.Historico);Assert.Contains("Recibo conferido",audit.EstadoPosterior);
+        Assert.Equal(new DateTime(2025,1,1),(await db.Nfses.SingleAsync()).DataPagamentoEfetivo);
+        await Assert.ThrowsAsync<InvalidOperationException>(()=>svc.ConfirmarAsync(p,[1]));
+    }
+    [SqlServerFact] public async Task Manual_review_still_rejects_note_changed_after_approval()
+    {
+        await using var f=new SqlServerFixture();var p=NeedsReview(await Setup(f));var svc=new ImportadorBaixas(f);
+        p=p with{Itens=[await svc.RevisarAsync(p,1,"8000","Conferido")]};
+        await using(var db=f.CreateDbContext()){(await db.Nfses.SingleAsync()).ValorLiquidoNfse=90;await db.SaveChangesAsync();}
+        await Assert.ThrowsAsync<InvalidOperationException>(()=>svc.ConfirmarAsync(p,[1]));
+        await using var check=f.CreateDbContext();Assert.Empty(await check.RegistrosBaixas.ToListAsync());Assert.False((await check.Nfses.SingleAsync()).EstaPago);
+    }
     [SqlServerFact] public async Task Commits_note_parcel_and_history_together()
     {
         await using var f=new SqlServerFixture();var preview=await Setup(f);

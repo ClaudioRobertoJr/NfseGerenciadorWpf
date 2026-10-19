@@ -7,10 +7,14 @@ namespace NfseGerenciador.Tests.Atualizacao;
 public class AtualizadorScriptTests
 {
     private static string Script()=>Path.GetFullPath(Path.Combine(AppContext.BaseDirectory,"../../../../Scripts/Atualizar.ps1"));
-    private static async Task<int> Run(string source,string dest)
+    private static async Task<int> Run(string source,string dest,bool defaultSource=false)
     {
         var si=new ProcessStartInfo("powershell.exe"){UseShellExecute=false,CreateNoWindow=true,RedirectStandardOutput=true,RedirectStandardError=true};
-        foreach(var a in new[]{"-NoProfile","-NonInteractive","-ExecutionPolicy","Bypass","-File",Script(),"-Origem",source,"-Destino",dest})si.ArgumentList.Add(a);
+        si.Environment.Remove("PSModulePath"); // Windows PowerShell must use its own modules, not the launching PowerShell 7 paths.
+        var script=Script();
+        if(defaultSource){script=Path.Combine(Path.GetDirectoryName(source)!,"Atualizar.ps1");File.Copy(Script(),script);Directory.Move(source,Path.Combine(Path.GetDirectoryName(source)!,"app"));}
+        foreach(var a in new[]{"-NoProfile","-NonInteractive","-ExecutionPolicy","Bypass","-File",script,"-Destino",dest})si.ArgumentList.Add(a);
+        if(!defaultSource){si.ArgumentList.Add("-Origem");si.ArgumentList.Add(source);}
         using var p=Process.Start(si)!;var stdout=p.StandardOutput.ReadToEndAsync();var stderr=p.StandardError.ReadToEndAsync();await p.WaitForExitAsync();await Task.WhenAll(stdout,stderr);if(p.ExitCode!=0)Console.WriteLine(await stderr);return p.ExitCode;
     }
     private static (string root,string source,string dest) Setup()
@@ -25,6 +29,8 @@ public class AtualizadorScriptTests
         var hash=Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(Path.Combine(source,"NfseGerenciador.exe"))));
         File.WriteAllText(Path.Combine(source,"manifest.json"),JsonSerializer.Serialize(new { files=new[] { new { path,sha256=hash } } }));
     }
+    [Fact] public async Task Default_source_works_with_windows_powershell_file_invocation()
+    {var x=Setup();try{Assert.Equal(0,await Run(x.source,x.dest,true));Assert.Equal("NEW",File.ReadAllText(Path.Combine(x.dest,"NfseGerenciador.exe")));Assert.Equal("PRESERVE-ME",File.ReadAllText(Path.Combine(x.dest,"appsettings.json")));}finally{Directory.Delete(x.root,true);}}
     [Fact] public async Task Replaces_executable_and_preserves_configuration()
     {var x=Setup();try{Assert.Equal(0,await Run(x.source,x.dest));Assert.Equal("NEW",File.ReadAllText(Path.Combine(x.dest,"NfseGerenciador.exe")));Assert.Equal("PRESERVE-ME",File.ReadAllText(Path.Combine(x.dest,"appsettings.json")));Assert.Contains(Directory.GetFiles(x.root,"NfseGerenciador.exe",SearchOption.AllDirectories),p=>p.Contains("backup-")&&File.ReadAllText(p)=="OLD");}finally{Directory.Delete(x.root,true);}}
     [Fact] public async Task Refuses_same_directory_without_modification()

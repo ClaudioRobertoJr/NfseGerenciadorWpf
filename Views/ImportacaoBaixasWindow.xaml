@@ -4,10 +4,18 @@
  Loaded="AoCarregar" Closing="AoFechar" Language="pt-BR">
  <Window.Resources>
   <DataTemplate x:Key="TabelaPrevia">
-   <DataGrid ItemsSource="{Binding}" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" SelectionMode="Single" IsReadOnly="False">
+   <DataGrid ItemsSource="{Binding}" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" SelectionMode="Single" IsReadOnly="True" RowDetailsVisibilityMode="VisibleWhenSelected">
+    <DataGrid.RowDetailsTemplate><DataTemplate><Border Background="#FFF7ED" Padding="12"><StackPanel>
+     <TextBlock Text="{Binding Item.Motivo}" TextWrapping="Wrap" FontWeight="SemiBold"/>
+     <TextBlock Text="{Binding Item.Origem.Historico}" TextWrapping="Wrap" Margin="0,5,0,0"/>
+     <TextBlock Text="Use Conferir para localizar a nota e justificar a divergência. Notas ausentes precisam do XML; valores diferentes e parcelamentos exigem baixa pelo cadastro da nota." TextWrapping="Wrap" Margin="0,5,0,0"/>
+    </StackPanel></Border></DataTemplate></DataGrid.RowDetailsTemplate>
     <DataGrid.Columns>
      <DataGridTemplateColumn Header="Baixar" Width="60"><DataGridTemplateColumn.CellTemplate><DataTemplate>
       <CheckBox IsChecked="{Binding Selecionada,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding Apta}" HorizontalAlignment="Center"/>
+     </DataTemplate></DataGridTemplateColumn.CellTemplate></DataGridTemplateColumn>
+     <DataGridTemplateColumn Header="Revisão" Width="100"><DataGridTemplateColumn.CellTemplate><DataTemplate>
+      <Button Content="Conferir" Click="RevisarLinha" IsEnabled="{Binding PodeRevisar}" Padding="7,3" Margin="0"/>
      </DataTemplate></DataGridTemplateColumn.CellTemplate></DataGridTemplateColumn>
      <DataGridTextColumn Header="Linha" Binding="{Binding Item.Origem.Linha}" Width="55" IsReadOnly="True"/>
      <DataGridTextColumn Header="Nota" Binding="{Binding Item.Numero}" Width="70" IsReadOnly="True"/>

@@ -9,7 +9,7 @@ namespace NfseGerenciador.Services.ImportacaoBaixas;
 public sealed class ConciliadorBaixas
 {
     private static readonly Regex Referencia = new(@"\b(?:NOTA(?:\s+FISCAL)?|NFS[- ]?E|NF)\s*(?:N[º°O.]\s*)?[.:º°#-]*\s*(?<numero>\d+)\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1));
-    public PreviaBaixas Conciliar(RelatorioBaixas relatorio, IReadOnlyList<Nfse> notas, IReadOnlyList<Pagamento> pagamentos, string prestadorCnpj)
+    public PreviaBaixas Conciliar(RelatorioBaixas relatorio, IReadOnlyList<Nfse> notas, IReadOnlyList<Pagamento> pagamentos, string prestadorCnpj, IReadOnlyDictionary<int,ConferenciaManual>? conferencias=null)
     {
         if (string.IsNullOrWhiteSpace(prestadorCnpj)) throw new ArgumentException("Selecione o prestador.");
         string provider = Digitos(prestadorCnpj);
@@ -19,10 +19,14 @@ public sealed class ConciliadorBaixas
         var items = new List<ItemPrevia>();
         foreach (var row in relatorio.Lancamentos)
         {
+            var manual=conferencias?.GetValueOrDefault(row.Id);
+            if(manual is not null && string.IsNullOrWhiteSpace(manual.Justificativa))throw new InvalidOperationException("Informe a justificativa da conferência manual.");
+            var linked=manual is null ? null : notas.SingleOrDefault(n=>n.Id==manual.NotaId && Digitos(n.PrestadorCnpj)==provider);
             string number = refs[row.Id] ?? "";
+            if(manual is not null)number=linked is null ? "" : NumeroNormal(linked.Numero);
             var item = new ItemPrevia { Origem=row, Numero=number, Status=StatusConciliacao.Revisao,
                 Local=LeitorRelatorioBaixas.Normalizar(row.Centro).Contains("LABORATORIO") || row.Centro.Trim().StartsWith("1.1.2.035",StringComparison.Ordinal) ? LocalPagamento.Laboratorio : LocalPagamento.Particular,
-                Impressao=Impressao(row,provider) };
+                Impressao=Impressao(row,provider), Conferencia=manual };
             ItemPrevia Review(string reason) => item with { Motivo=reason };
             var history = LeitorRelatorioBaixas.Normalizar(row.Historico);
             if (history.Contains("SIPAG") || history.Contains("CARTAO"))
@@ -32,7 +36,7 @@ public sealed class ConciliadorBaixas
             else if (row.Debito != 0 || row.Credito <= 0 || history.Contains("ESTORNO"))
                 item = item with { Status=StatusConciliacao.Ignorada, Motivo="Débito, estorno ou crédito não positivo." };
             else if (number.Length == 0) item=Review("Não há referência única e explícita à nota fiscal.");
-            else if (repetitions[number] > 1) item=Review("Mais de um lançamento para a nota: conferir manualmente.");
+            else if (refs[row.Id] is string original && repetitions[original] > 1) item=Review("Mais de um lançamento para a nota: conferir manualmente.");
             else if (!byNumber.TryGetValue(number,out var matches) || matches.Count == 0) item=Review("Nota não encontrada para o prestador selecionado.");
             else if (matches.Count != 1) item=Review("Número duplicado no cadastro deste prestador.");
             else
@@ -42,16 +46,16 @@ public sealed class ConciliadorBaixas
                 if (note.Excluida) item=Review("Nota excluída: não será baixada.");
                 else if (note.EstaPago) item=item with { Status=StatusConciliacao.Ignorada, Motivo="Nota já paga." };
                 else if (note.ValorLiquidoNfse != row.Credito) item=Review("Crédito diferente do valor líquido da nota.");
-                else if (row.Data.Value.Date < note.DataEmissao.Date) item=Review("Recebimento anterior à emissão: conferir.");
+                else if (manual is null && row.Data.Value.Date < note.DataEmissao.Date) item=Review("Recebimento anterior à emissão: conferir.");
                 else if (!ParcelasCompativeis(note)) item=Review("Parcelamento ou pagamento anterior: conferir manualmente.");
-                else if (NomeDivergente(row.Historico,note.TomadorRazaoSocial)) item=Review("Nome no histórico difere do tomador.");
+                else if (manual is null && NomeDivergente(row.Historico,note.TomadorRazaoSocial)) item=Review("Nome no histórico difere do tomador.");
                 else
                 {
                     string type=row.Contrapartida switch { "4889" or "230" => "Pix", "132" or "108" => "Dinheiro", _ => "" };
                     var payment=pagamentos.Where(p=>LeitorRelatorioBaixas.Normalizar(p.TipoRecebimento)==LeitorRelatorioBaixas.Normalizar(type) && p.EhAVista && p.NumeroParcelas is null or 1).ToList();
                     if(type.Length==0) item=Review("Contrapartida sem regra de pagamento.");
                     else if(payment.Count!=1) item=Review("Forma de pagamento à vista ausente ou duplicada: "+type+".");
-                    else item=item with { Status=StatusConciliacao.Apta, Motivo="Nota e valor conferidos.", TipoPagamento=type, PagamentoId=payment[0].Id };
+                    else item=item with { Status=StatusConciliacao.Apta, Motivo=manual is null ? "Nota e valor conferidos." : "Conferida manualmente: "+manual.Justificativa, TipoPagamento=type, PagamentoId=payment[0].Id };
                 }
             }
             items.Add(item);

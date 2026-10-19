@@ -9,6 +9,7 @@ public sealed class LinhaBaixa(ItemPrevia item) : INotifyPropertyChanged
 {
     public ItemPrevia Item { get; } = item;
     public bool Apta => Item.Status==StatusConciliacao.Apta;
+    public bool PodeRevisar => Item.Status==StatusConciliacao.Revisao;
     private bool selected=item.Status==StatusConciliacao.Apta;
     public bool Selecionada { get=>selected; set { var v=value && Apta;if(v==selected)return;selected=v;PropertyChanged?.Invoke(this,new(nameof(Selecionada))); } }
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -68,8 +69,27 @@ public sealed class ImportacaoBaixasViewModel(IImportadorBaixas service) : INoti
         catch {Mensagem="A operação não foi concluída. Gere uma nova prévia antes de tentar novamente.";throw;}
         finally {preview=null;foreach(var line in Itens)line.Selecionada=false;EstaOcupado=false;NotificarResumo();}
     }
+    public async Task RevisarAsync(LinhaBaixa linha,string numero,string justificativa,Func<ItemPrevia,bool> confirmar)
+    {
+        if(busy || preview is null || !Itens.Contains(linha) || !linha.PodeRevisar)throw new InvalidOperationException("Gere a prévia e selecione uma linha para conferir.");
+        int version=generation;
+        EstaOcupado=true;
+        try
+        {
+            var item=await service.RevisarAsync(preview,linha.Item.Origem.Id,numero,justificativa);
+            if(version!=generation)return;
+            if(!confirmar(item))return;
+            if(version!=generation)return;
+            preview=preview with{Itens=preview.Itens.Select(i=>i.Origem.Id==item.Origem.Id ? item : i).ToArray()};
+            var replacement=new LinhaBaixa(item);replacement.PropertyChanged+=Changed;
+            linha.PropertyChanged-=Changed;Itens[Itens.IndexOf(linha)]=replacement;
+            Mensagem="Nota conferida e movida para Aptas. A baixa só será gravada ao confirmar as selecionadas.";
+        }
+        finally {EstaOcupado=false;NotificarResumo();}
+    }
     public void SelecionarAptas(bool value){if(busy)return;foreach(var i in Itens)i.Selecionada=value;}
-    private void Changed(object? sender,PropertyChangedEventArgs args)=>NotificarResumo();
+    private void Changed(object? sender,PropertyChangedEventArgs args)
+    {Notify(nameof(QuantidadeSelecionada));Notify(nameof(ValorSelecionado));Notify(nameof(PodeConfirmar));}
     private void Invalidar()
     {
         generation++;preview=null;Resultado=null;

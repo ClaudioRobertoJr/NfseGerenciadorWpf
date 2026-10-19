@@ -1,9 +1,12 @@
 param(
     [Parameter(Mandatory=$true)][string]$Destino,
-    [string]$Origem=(Join-Path $PSScriptRoot 'app')
+    [string]$Origem
 )
 $ErrorActionPreference='Stop'
 Set-StrictMode -Version Latest
+if([string]::IsNullOrWhiteSpace($Origem)){
+    $Origem=Join-Path (Split-Path -Parent $MyInvocation.MyCommand.Path) 'app'
+}
 $source=[IO.Path]::GetFullPath($Origem).TrimEnd([IO.Path]::DirectorySeparatorChar)
 $target=[IO.Path]::GetFullPath($Destino).TrimEnd([IO.Path]::DirectorySeparatorChar)
 if($source -eq $target -or $source.StartsWith($target+'\',[StringComparison]::OrdinalIgnoreCase) -or $target.StartsWith($source+'\',[StringComparison]::OrdinalIgnoreCase)){throw 'Origem e destino devem ser pastas separadas.'}
