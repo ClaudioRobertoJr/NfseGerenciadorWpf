@@ -1,5 +1,11 @@
 # NFS-e Gerenciador
 
+## Atualização NFS-e Nacional (1.1.0)
+
+[Baixar atualização Windows x64](https://github.com/ClaudioRobertoJr/NfseGerenciadorWpf/releases/latest) · [Instruções de atualização](docs/ATUALIZACAO.md)
+
+Importa pela API ADN com certificado A1/A3 e procuração, somente notas emitidas pelo CNPJ informado desde 01/11/2026. Salva o progresso por NSU, evita duplicação por chave e preserva baixas anteriores. A pasta `Instalador` contém a versão antiga; utilize Releases para esta atualização.
+
 ![.NET](https://img.shields.io/badge/.NET-8-blueviolet) 
 ![C#](https://img.shields.io/badge/C%23-11-blue)
 ![WPF](https://img.shields.io/badge/WPF-Framework-blue)

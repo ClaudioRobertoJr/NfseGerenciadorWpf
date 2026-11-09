@@ -10,6 +10,8 @@ namespace NfseGerenciador.Models
     {
         [Key]
         public int Id { get; set; }
+        public string? ChaveAcessoNacional { get; set; }
+        public bool Cancelada { get; set; }
         public string Numero { get; set; }
         public string CodigoVerificacao { get; set; }
         public DateTime DataEmissao { get; set; }

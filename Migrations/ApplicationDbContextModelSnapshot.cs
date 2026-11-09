@@ -49,6 +49,47 @@ namespace NfseGerenciador.Migrations
                     b.ToTable("EmpresasClassificadas");
                 });
 
+            modelBuilder.Entity("NfseGerenciador.Models.NacionalEvento", b =>
+                {
+                    b.Property<string>("Cnpj")
+                        .HasMaxLength(14)
+                        .HasColumnType("nvarchar(14)");
+
+                    b.Property<long>("Nsu")
+                        .HasColumnType("bigint");
+
+                    b.Property<bool>("Cancela")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Chave")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Cnpj", "Nsu");
+
+                    b.ToTable("NacionalEvento");
+                });
+
+            modelBuilder.Entity("NfseGerenciador.Models.NacionalSync", b =>
+                {
+                    b.Property<string>("Cnpj")
+                        .HasMaxLength(14)
+                        .HasColumnType("nvarchar(14)");
+
+                    b.Property<long>("UltimoNsu")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Cnpj");
+
+                    b.ToTable("NacionalSync");
+                });
+
             modelBuilder.Entity("NfseGerenciador.Models.Nfse", b =>
                 {
                     b.Property<int>("Id")
@@ -56,6 +97,13 @@ namespace NfseGerenciador.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Cancelada")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("ChaveAcessoNacional")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("ClassificacaoEspecial")
                         .HasColumnType("nvarchar(max)");
@@ -109,6 +157,10 @@ namespace NfseGerenciador.Migrations
                         .HasColumnType("decimal(18,2)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ChaveAcessoNacional")
+                        .IsUnique()
+                        .HasFilter("[ChaveAcessoNacional] IS NOT NULL");
 
                     b.HasIndex("PagamentoId");
 

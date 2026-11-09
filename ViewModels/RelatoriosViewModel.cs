@@ -106,7 +106,7 @@ namespace NfseGerenciador.ViewModels
                         .AsNoTracking()
                         .Include(p => p.Nfse)
                         .ThenInclude(nfs => nfs.Pagamento)
-                        .Where(p => !p.Nfse.Excluida);
+                        .Where(p => !p.Nfse.Excluida && (!p.Nfse.Cancelada || p.ParcelaPaga));
 
                     // Filtros... (a lógica interna permanece a mesma)
                     #region Lógica de Filtros

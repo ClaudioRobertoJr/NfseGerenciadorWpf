@@ -31,6 +31,15 @@ public class ApplicationDbContext : DbContext
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<NacionalSync>().HasKey(x => x.Cnpj);
+            modelBuilder.Entity<NacionalSync>().Property(x => x.Cnpj).HasMaxLength(14);
+            modelBuilder.Entity<NacionalEvento>().HasKey(x => new { x.Cnpj, x.Nsu });
+            modelBuilder.Entity<NacionalEvento>().Property(x => x.Cnpj).HasMaxLength(14);
+            modelBuilder.Entity<NacionalEvento>().Property(x => x.Chave).HasMaxLength(50);
+            modelBuilder.Entity<NacionalEvento>().Property(x => x.Tipo).HasMaxLength(100);
+            modelBuilder.Entity<Nfse>().Property(x => x.ChaveAcessoNacional).HasMaxLength(50);
+            modelBuilder.Entity<Nfse>().HasIndex(x => x.ChaveAcessoNacional).IsUnique()
+                .HasFilter("[ChaveAcessoNacional] IS NOT NULL");
             // Configura o relacionamento entre Nfse e Pagamento
             modelBuilder.Entity<Nfse>()
                 .HasOne(n => n.Pagamento) // Uma NF-e tem um Pagamento

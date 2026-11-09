@@ -6,6 +6,7 @@
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UseWPF>true</UseWPF>
+		<Version>1.1.0</Version>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -20,7 +21,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Page Include="App.xaml" />
+		<Compile Remove="tests/**/*.cs" />
+		<None Remove="tests/**" />
 	</ItemGroup>
 
 	<ItemGroup>

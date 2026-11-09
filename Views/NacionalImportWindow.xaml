@@ -1,0 +1,16 @@
+<Window x:Class="NfseGerenciador.Views.NacionalImportWindow"
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+ Title="Importar NFS-e Nacional" Width="650" Height="360" WindowStartupLocation="CenterOwner" ResizeMode="NoResize" Closing="OnClosing">
+ <StackPanel Margin="24">
+  <TextBlock FontSize="21" FontWeight="SemiBold" Text="Importar notas emitidas" Margin="0,0,0,14"/>
+  <TextBlock Text="CNPJ da instituição representada (14 dígitos):"/>
+  <TextBox x:Name="CnpjInput" Margin="0,6,0,12" MaxLength="18"/>
+  <TextBlock TextWrapping="Wrap" Text="Serão importadas somente emissões a partir de 01/11/2026. Conecte o cartão A3 ou use um certificado A1 instalado. A primeira sincronização percorre o histórico; as próximas continuam do último lote salvo."/>
+  <StackPanel Orientation="Horizontal" Margin="0,16,0,12">
+   <Button x:Name="StartButton" Content="Selecionar certificado e importar" Click="Start_Click" Padding="12,6"/>
+   <Button x:Name="CancelButton" Content="Parar" Click="Cancel_Click" IsEnabled="False" Margin="10,0,0,0" Padding="12,6"/>
+  </StackPanel>
+  <TextBlock x:Name="StatusText" TextWrapping="Wrap" Text="O PIN será solicitado pelo programa do certificado. Ele não é armazenado pelo gerenciador."/>
+ </StackPanel>
+</Window>

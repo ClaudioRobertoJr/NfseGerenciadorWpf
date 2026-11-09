@@ -17,6 +17,7 @@ namespace NfseGerenciador
 
         public App()
         {
+            Directory.SetCurrentDirectory(AppContext.BaseDirectory);
             var builder = new ConfigurationBuilder()
            .SetBasePath(Directory.GetCurrentDirectory())
            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);

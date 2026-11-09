@@ -34,6 +34,7 @@
 
             <DockPanel>
                 <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,10">
+                    <Button Content="Importar NFS-e Nacional" Click="ImportarNacional_Click" Style="{StaticResource BotaoPrimarioStyle}"/>
                     <Button Command="{Binding ImportarXmlCommand}" Style="{StaticResource BotaoPrimarioStyle}">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="&#xE8C6;" Style="{StaticResource IconeEmBotaoStyle}"/>
@@ -155,6 +156,7 @@
                 <DataGrid ItemsSource="{Binding Nfses}" SelectedItem="{Binding NfseSelecionada}" AutoGenerateColumns="False" IsReadOnly="True" AlternatingRowBackground="#FFF7F7F7">
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="Número" Binding="{Binding Numero}" Width="Auto"/>
+                        <DataGridCheckBoxColumn Header="Cancelada" Binding="{Binding Cancelada}" Width="Auto"/>
                         <DataGridTextColumn Header="Emissão" Binding="{Binding DataEmissao, StringFormat='dd/MM/yyyy'}" SortDirection="Descending" Width="Auto"/>
                         <DataGridTextColumn Header="Valor" Binding="{Binding ValorLiquidoNfse, StringFormat=C, ConverterCulture='pt-BR'}" Width="Auto" MinWidth="110"/>
                         <DataGridTextColumn Header="Tomador" Binding="{Binding TomadorRazaoSocial}" Width="2.5*"/>

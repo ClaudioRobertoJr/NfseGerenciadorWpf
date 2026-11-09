@@ -1,6 +1,8 @@
 ﻿// NfseGerenciador/Views/GerenciadorNfseWindow.xaml.cs
 using NfseGerenciador.ViewModels;
 using System.Windows;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.EntityFrameworkCore;
 
 namespace NfseGerenciador.Views
 {
@@ -10,6 +12,12 @@ namespace NfseGerenciador.Views
     /// </summary>
     public partial class GerenciadorNfseWindow : Window
     {
+        private void ImportarNacional_Click(object sender, RoutedEventArgs e)
+        {
+            var factory = App.ServiceProvider.GetRequiredService<IDbContextFactory<ApplicationDbContext>>();
+            new NacionalImportWindow(factory) { Owner = this }.ShowDialog();
+            ((GerenciadorNfseViewModel)DataContext).AtualizarListaCommand.Execute(null);
+        }
         // O ViewModel é injetado automaticamente pelo container de DI configurado no App.xaml.cs
         public GerenciadorNfseWindow(GerenciadorNfseViewModel viewModel)
         {

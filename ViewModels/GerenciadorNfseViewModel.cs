@@ -223,7 +223,12 @@ namespace NfseGerenciador.ViewModels
             {
                 using var context = _contextFactory.CreateDbContext();
                 var notaParaAtualizar = await context.Nfses.Include(n => n.Parcelas).FirstOrDefaultAsync(n => n.Id == NfseSelecionada.Id);
-                if (notaParaAtualizar == null) return;
+                    if (notaParaAtualizar == null) return;
+                    if (notaParaAtualizar.Cancelada)
+                    {
+                        MessageBox.Show("Esta nota está cancelada fiscalmente. As baixas anteriores foram preservadas; confira os recebimentos antes de qualquer ajuste.");
+                        return;
+                    }
 
                 notaParaAtualizar.Local = DetalhesLocalPagamento;
                 notaParaAtualizar.EstaPago = DetalhesEstaPago;
@@ -285,7 +290,7 @@ namespace NfseGerenciador.ViewModels
                                                  .Include(n => n.Pagamento);
 
                 if (FiltroStatus == "Pagas") query = query.Where(n => n.EstaPago);
-                else if (FiltroStatus == "Em Aberto") query = query.Where(n => !n.EstaPago);
+                else if (FiltroStatus == "Em Aberto") query = query.Where(n => !n.EstaPago && !n.Cancelada);
 
                 // Adicionado filtro por Local
                 if (!string.IsNullOrEmpty(_filtroLocal) && Enum.TryParse<LocalPagamento>(_filtroLocal, out var local))
@@ -360,7 +365,7 @@ namespace NfseGerenciador.ViewModels
 
         private bool PodeSalvarPagamento()
         {
-            if (NfseSelecionada == null) return false;
+            if (NfseSelecionada == null || NfseSelecionada.Cancelada) return false;
             return !DetalhesEstaPago || (DetalhesDataPagamento.HasValue && DetalhesTipoRecebimento != null && DetalhesNumParcelas > 0);
         }
         #endregion

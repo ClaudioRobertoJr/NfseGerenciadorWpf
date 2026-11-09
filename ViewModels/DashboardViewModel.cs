@@ -126,7 +126,7 @@ namespace NfseGerenciador.ViewModels
                         (DateTime dataInicio, DateTime dataFim) = GetPeriodoSelecionado();
 
                         var notasBase = context.Nfses.AsNoTracking()
-                            .Where(n => !n.Excluida && n.ClassificacaoEspecial != "Convênio" && n.ClassificacaoEspecial != "Plano de Saúde");
+                            .Where(n => !n.Excluida && (!n.Cancelada || n.EstaPago) && n.ClassificacaoEspecial != "Convênio" && n.ClassificacaoEspecial != "Plano de Saúde");
 
                         var notasPagas = await notasBase
                                               .Include(n => n.Parcelas)
@@ -154,7 +154,7 @@ namespace NfseGerenciador.ViewModels
                             .ToList();
 
                         var fluxoPrevisto = await context.NfseParcelas.AsNoTracking().Include(p => p.Nfse)
-                            .Where(p => !p.Nfse.Excluida && !p.ParcelaPaga && p.DataVencimentoParcela >= DateTime.Today)
+                            .Where(p => !p.Nfse.Excluida && !p.Nfse.Cancelada && !p.ParcelaPaga && p.DataVencimentoParcela >= DateTime.Today)
                             .ToListAsync();
 
                         var fluxoPrevistoAgrupado = fluxoPrevisto

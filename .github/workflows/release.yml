@@ -1,0 +1,40 @@
+name: Compilar e publicar Windows
+on:
+  push:
+    branches: [master, 'feat/**']
+    tags: ['v*']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Testes de importação
+        run: dotnet run --project tests/AdnTests/AdnTests.csproj -c Release
+      - name: Compilar e publicar
+        run: dotnet publish NfseGerenciador.csproj -c Release -r win-x64 --self-contained true -o package/app -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+      - name: Montar atualização
+        shell: pwsh
+        run: |
+          Remove-Item -LiteralPath package/app/appsettings.json -ErrorAction SilentlyContinue
+          Copy-Item scripts/Atualizar.ps1,scripts/Atualizar.cmd,docs/ATUALIZACAO.md package/
+          Compress-Archive -Path package/* -DestinationPath NfseGerenciador-win-x64.zip
+          Get-FileHash NfseGerenciador-win-x64.zip -Algorithm SHA256 | ForEach-Object { "$($_.Hash)  NfseGerenciador-win-x64.zip" } | Set-Content SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NfseGerenciador-win-x64
+          path: |
+            NfseGerenciador-win-x64.zip
+            SHA256SUMS.txt
+      - name: Publicar release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create '${{ github.ref_name }}' NfseGerenciador-win-x64.zip SHA256SUMS.txt --title 'NFS-e Gerenciador ${{ github.ref_name }}' --notes-file docs/ATUALIZACAO.md --verify-tag
