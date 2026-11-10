@@ -26,3 +26,10 @@ Revisão abrangeu listagem, pagamento, XML, importação nacional/baixas, relat�
 4. Gere relatório, CSV e dashboard; confira períodos e totais com uma amostra conhecida.
 5. Gere prévia das baixas e confira importação nacional com cartão A3 real. O cartão não é simulado pelos testes.
 6. A restauração real permanece operação destrutiva explicitamente confirmada pelo usuário na tela; teste-a apenas em ambiente separado, nunca para experimentar sobre seu banco de produção.
+
+## Validação automatizada
+- 118 testes aprovados no Windows do GitHub, sem ignorados, incluindo 16 testes SQL em bancos descartáveis. A consulta foi exercitada em quatro páginas sem repetição, com filtros combinados, CPF formatado e busca curta por número.
+- Testes locais cobrem respostas fora de ordem, falha SQL simulada com manutenção da página anterior, limpeza de filtros, comandos na thread STA, carregamento das janelas WPF, parser XML, CSV e seleção de backups.
+- Restauração exercitada em banco descartável com dois conjuntos no mesmo .bak, confirmando recuperação do último conjunto; nenhum banco instalado foi utilizado.
+- 28 verificações da importação nacional passaram e EF confirmou ausência de mudanças de modelo pendentes.
+- Execução final: https://github.com/ClaudioRobertoJr/NfseGerenciadorWpf/actions/runs/42869853846
