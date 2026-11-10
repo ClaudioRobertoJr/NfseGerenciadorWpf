@@ -1,3 +1,7 @@
+# Novidades da versão 1.1.4
+
+Recuperado o botão **Importar baixas** no topo da tela de notas, com o fluxo Excel, prévia e confirmação da branch antiga. Notas fiscalmente canceladas ficam bloqueadas para novas baixas. Notas, parcelas, pagamentos e NSU são preservados. [Como usar e validar](BAIXAS.md).
+
 # Atualização 1.1.3 — seleção e conexão com o cartão no auxiliar
 
 A versão 1.1.2 separou o HTTPS, mas ainda enumerava e selecionava certificados dentro do gerenciador; a falha da janela persistiu. A 1.1.3 move também essas etapas para `NfseAdnWorker.exe`. O gerenciador não abre o repositório de certificados nem recebe objetos de certificado. O auxiliar seleciona o certificado na thread principal STA e executa o HTTPS no pool de threads, como no teste isolado que solicitou o PIN e retornou 50 documentos em 7,1 segundos na máquina afetada. A importação integrada ainda precisa ser validada nessa máquina.

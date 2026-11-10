@@ -16,17 +16,30 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-      - name: Testes de importação
+      - name: Testes de importaÃƒÂ§ÃƒÂ£o
         run: dotnet run --project tests/AdnTests/AdnTests.csproj -c Release
+      - name: Testar baixas e migraÃ§Ã£o em SQL Server isolado
+        shell: pwsh
+        env:
+          NFSE_TEST_CONNECTION: 'Server=(localdb)\MSSQLLocalDB;Integrated Security=true;TrustServerCertificate=true'
+        run: |
+          sqllocaldb start MSSQLLocalDB
+          if ($LASTEXITCODE -ne 0) { throw 'SQL Server de testes indisponÃ­vel.' }
+          ./tests/BaixasTests/VerificarAcesso.ps1
+          dotnet test tests/BaixasTests/BaixasTests.csproj -c Release --logger "console;verbosity=normal"
+          if ($LASTEXITCODE -ne 0) { throw 'Falha nos testes de baixas.' }
       - name: Compilar e publicar
         run: dotnet publish NfseGerenciador.csproj -c Release -r win-x64 --self-contained true -o package/app -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
-      - name: Publicar processo de conexão A3
+      - name: Publicar processo de conexÃƒÂ£o A3
         run: dotnet publish tests/AdnWorker/AdnWorker.csproj -c Release -r win-x64 --self-contained true -o package/app -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
-      - name: Montar atualização
+      - name: Montar atualizaÃƒÂ§ÃƒÂ£o
         shell: pwsh
         run: |
           Remove-Item -LiteralPath package/app/appsettings.json -ErrorAction SilentlyContinue
-          Copy-Item scripts/Atualizar.ps1,scripts/Atualizar.cmd,docs/ATUALIZACAO.md package/
+          Copy-Item scripts/Atualizar.ps1,scripts/Atualizar.cmd,docs/ATUALIZACAO.md,docs/BAIXAS.md package/
+          foreach ($exe in 'NfseGerenciador.exe','NfseAdnWorker.exe') {
+            if (-not (Test-Path "package/app/$exe")) { throw "ExecutÃ¡vel ausente: $exe" }
+          }
           Compress-Archive -Path package/* -DestinationPath NfseGerenciador-win-x64.zip
           Get-FileHash NfseGerenciador-win-x64.zip -Algorithm SHA256 | ForEach-Object { "$($_.Hash)  NfseGerenciador-win-x64.zip" } | Set-Content SHA256SUMS.txt
       - uses: actions/upload-artifact@v4

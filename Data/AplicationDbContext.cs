@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 
 using System;
 using System.Collections.Generic;
@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using NfseGerenciador.Models;
+using NfseGerenciador.Models.ImportacaoBaixas;
 using Microsoft.Extensions.Configuration;
 
 
@@ -14,6 +15,8 @@ public class ApplicationDbContext : DbContext
     {
 
         private readonly IConfiguration _configuration;
+        public DbSet<LoteBaixa> LotesBaixas { get; set; }
+        public DbSet<RegistroBaixa> RegistrosBaixas { get; set; }
         public DbSet<Nfse> Nfses { get; set; }
         public DbSet<Pagamento> Pagamentos { get; set; }
         public DbSet<EmpresaClassificada> EmpresasClassificadas { get; set; }
@@ -31,6 +34,11 @@ public class ApplicationDbContext : DbContext
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<LoteBaixa>().Property(x => x.Valor).HasPrecision(18, 2);
+            modelBuilder.Entity<RegistroBaixa>().Property(x => x.Valor).HasPrecision(18, 2);
+            modelBuilder.Entity<RegistroBaixa>().HasIndex(x => x.Impressao).IsUnique();
+            modelBuilder.Entity<RegistroBaixa>().HasOne(x => x.Lote).WithMany().HasForeignKey(x => x.LoteBaixaId).OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<RegistroBaixa>().HasOne(x => x.Nota).WithMany().HasForeignKey(x => x.NfseId).OnDelete(DeleteBehavior.Restrict);
             modelBuilder.Entity<NacionalSync>().HasKey(x => x.Cnpj);
             modelBuilder.Entity<NacionalSync>().Property(x => x.Cnpj).HasMaxLength(14);
             modelBuilder.Entity<NacionalEvento>().HasKey(x => new { x.Cnpj, x.Nsu });

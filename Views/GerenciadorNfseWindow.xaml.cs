@@ -1,4 +1,4 @@
-﻿// NfseGerenciador/Views/GerenciadorNfseWindow.xaml.cs
+// NfseGerenciador/Views/GerenciadorNfseWindow.xaml.cs
 using NfseGerenciador.ViewModels;
 using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,6 +13,22 @@ namespace NfseGerenciador.Views
     /// </summary>
     public partial class GerenciadorNfseWindow : Window
     {
+        private void ImportarBaixas(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var window = App.ServiceProvider.GetRequiredService<ImportacaoBaixasWindow>();
+                window.Owner = this;
+                window.ShowDialog();
+                if (window.HouveBaixas && DataContext is GerenciadorNfseViewModel vm)
+                    vm.AtualizarListaCommand.Execute(null);
+            }
+            catch (Exception ex)
+            {
+                App.ServiceProvider.GetRequiredService<LogService>().LogError(ex, "Abrir importação de baixas");
+                MessageBox.Show(this, "Não foi possível abrir a importação de baixas. Consulte o log.", "Importar baixas", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
         private bool _nationalWindowOpen;
         private async void ImportarNacional_Click(object sender, RoutedEventArgs e)
         {

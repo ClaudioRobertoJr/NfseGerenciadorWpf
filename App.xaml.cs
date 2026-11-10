@@ -1,4 +1,4 @@
-﻿// NfseGerenciador/App.xaml.cs
+// NfseGerenciador/App.xaml.cs
 using Microsoft.Extensions.DependencyInjection;
 using NfseGerenciador.Services;
 using NfseGerenciador.ViewModels;
@@ -39,6 +39,9 @@ namespace NfseGerenciador
             services.AddDbContextFactory<ApplicationDbContext>();
 
             // Registra os ViewModels para serem criados sempre que forem solicitados
+            services.AddTransient<NfseGerenciador.Services.ImportacaoBaixas.IImportadorBaixas, NfseGerenciador.Services.ImportacaoBaixas.ImportadorBaixas>();
+            services.AddTransient<ImportacaoBaixasViewModel>();
+            services.AddTransient<ImportacaoBaixasWindow>();
             services.AddTransient<GerenciadorNfseViewModel>();
             services.AddTransient<EmpresaClassificadaViewModel>();
             services.AddTransient<RelatoriosViewModel>();

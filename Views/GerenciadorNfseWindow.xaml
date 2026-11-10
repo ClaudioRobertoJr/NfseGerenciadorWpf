@@ -1,4 +1,4 @@
-﻿<Window x:Class="NfseGerenciador.Views.GerenciadorNfseWindow"
+<Window x:Class="NfseGerenciador.Views.GerenciadorNfseWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -34,6 +34,7 @@
 
             <DockPanel>
                 <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,10">
+                    <Button Content="Importar baixas" Click="ImportarBaixas" Style="{StaticResource BotaoPrimarioStyle}"/>
                     <Button Content="Importar NFS-e Nacional" Click="ImportarNacional_Click" Style="{StaticResource BotaoPrimarioStyle}"/>
                     <Button Command="{Binding ImportarXmlCommand}" Style="{StaticResource BotaoPrimarioStyle}">
                         <StackPanel Orientation="Horizontal">
