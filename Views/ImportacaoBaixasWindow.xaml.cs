@@ -63,4 +63,3 @@ public partial class ImportacaoBaixasWindow : Window
     private void AoFechar(object? sender,CancelEventArgs e){if(vm.EstaOcupado){e.Cancel=true;MessageBox.Show(this,"Aguarde a operação terminar antes de fechar.","Operação em andamento");}}
     private void Erro(Exception ex){log.LogError(ex,"Importação de baixas");MessageBox.Show(this,ex is InvalidOperationException or System.IO.InvalidDataException ? ex.Message : "Não foi possível concluir a operação. Confira o acesso ao arquivo e ao banco. Detalhes no log.","Importar baixas",MessageBoxButton.OK,MessageBoxImage.Warning);}
 }
-

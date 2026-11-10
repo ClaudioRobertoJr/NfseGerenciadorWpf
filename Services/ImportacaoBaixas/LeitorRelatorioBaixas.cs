@@ -123,4 +123,3 @@ public sealed class LeitorRelatorioBaixas
     internal static string Normalizar(string text) => Regex.Replace(
         string.Concat((text ?? "").Normalize(NormalizationForm.FormD).Where(c => CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)).ToUpperInvariant(), "[^A-Z0-9]", "");
 }
-

@@ -87,4 +87,3 @@ public class LeitorRelatorioBaixasTests
         Assert.Empty(new LeitorRelatorioBaixas().Ler(s).Lancamentos);
     }
 }
-

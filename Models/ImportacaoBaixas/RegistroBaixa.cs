@@ -18,4 +18,3 @@ public sealed class RegistroBaixa
     public string EstadoAnterior { get; set; } = "";
     public string EstadoPosterior { get; set; } = "";
 }
-

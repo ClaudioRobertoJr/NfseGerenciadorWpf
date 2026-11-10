@@ -64,4 +64,3 @@ public class ConciliadorBaixasTests
     [Fact] public void Fingerprint_ignores_file_position_but_not_payment_details()
     {var a=Match();var b=Match(Linha() with{Id=500,Linha=99,Planilha="Outra"});var c=Match(Linha() with{Data=new(2026,10,14)});Assert.Equal(a.Impressao,b.Impressao);Assert.NotEqual(a.Impressao,c.Impressao);}
 }
-

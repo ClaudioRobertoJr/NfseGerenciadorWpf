@@ -121,4 +121,3 @@ public class ImportadorBaixasSqlServerTests
         await using var db=f.CreateDbContext();var parcel=await db.NfseParcelas.SingleAsync();Assert.True(parcel.ParcelaPaga);Assert.Equal(100m,parcel.ValorParcela);
     }
 }
-

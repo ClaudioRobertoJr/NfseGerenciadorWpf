@@ -89,4 +89,3 @@ public sealed class ImportadorBaixas(IDbContextFactory<ApplicationDbContext> fac
         n.Id,n.Numero,n.PrestadorCnpj,n.EstaPago,n.Local,n.PagamentoId,n.DataPagamentoEfetivo,n.DataPrevistaRecebimento,
         Parcelas=n.Parcelas.Select(p=>new{p.Id,p.NumeroParcela,p.ValorParcela,p.DataVencimentoParcela,p.ParcelaPaga,p.DataPagamentoParcela}) });
 }
-

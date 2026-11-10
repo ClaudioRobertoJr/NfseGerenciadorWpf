@@ -29,4 +29,3 @@ public sealed class SqlServerFixture : IAsyncDisposable, IDbContextFactory<Appli
         await using var db=CreateDbContext();await db.Database.EnsureDeletedAsync();
     }
 }
-

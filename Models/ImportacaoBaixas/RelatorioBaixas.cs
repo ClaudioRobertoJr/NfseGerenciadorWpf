@@ -17,4 +17,3 @@ public sealed record LancamentoRelatorio
     public string? Erro { get; init; }
 }
 public sealed record RelatorioBaixas(string HashArquivo, IReadOnlyList<LancamentoRelatorio> Lancamentos, IReadOnlyList<string> Diagnosticos);
-

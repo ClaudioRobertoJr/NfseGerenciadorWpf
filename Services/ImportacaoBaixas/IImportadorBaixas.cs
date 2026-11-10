@@ -6,4 +6,3 @@ public interface IImportadorBaixas
     Task<ResultadoImportacao> ConfirmarAsync(PreviaBaixas previa,IReadOnlyCollection<int> linhasSelecionadas,CancellationToken ct=default);
     Task<ItemPrevia> RevisarAsync(PreviaBaixas previa,int linhaId,string numero,string justificativa,CancellationToken ct=default) => throw new NotSupportedException();
 }
-

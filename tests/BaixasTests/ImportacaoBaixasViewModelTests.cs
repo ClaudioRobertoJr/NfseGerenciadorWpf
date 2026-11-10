@@ -73,4 +73,3 @@ public class ImportacaoBaixasViewModelTests
         s.Saving.SetResult(new(10,1,100));await work;Assert.False(vm.PodeConfirmar);Assert.Equal(10,vm.Resultado!.LoteId);
     }
 }
-

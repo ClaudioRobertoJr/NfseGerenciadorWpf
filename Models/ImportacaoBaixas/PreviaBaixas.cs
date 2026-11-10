@@ -25,4 +25,3 @@ public sealed record PreviaBaixas(RelatorioBaixas Relatorio, string PrestadorCnp
     public string NomeArquivo { get; init; } = "";
 }
 public sealed record ResultadoImportacao(int LoteId, int Quantidade, decimal Valor);
-

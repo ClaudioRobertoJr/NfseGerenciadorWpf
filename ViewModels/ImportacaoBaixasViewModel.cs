@@ -108,4 +108,3 @@ public sealed class ImportacaoBaixasViewModel(IImportadorBaixas service) : INoti
     public event PropertyChangedEventHandler? PropertyChanged;
     private void Notify([CallerMemberName]string? name=null)=>PropertyChanged?.Invoke(this,new(name));
 }
-
