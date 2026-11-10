@@ -44,6 +44,23 @@ batch.LoteDFe[0].NSU=50;
 try { await Query(HttpStatusCode.OK,batch); throw new Exception("Aceitou lote repetido"); }
 catch (InvalidDataException) { Console.WriteLine("PASS rejeita lote que não avança"); }
 
+var failureSequence = new List<string>();
+var windowError = new System.ComponentModel.Win32Exception(0);
+await ImportWindowGuard.RunAsync(
+    () => throw windowError,
+    () => { failureSequence.Add("stop"); return Task.CompletedTask; },
+    error => { Check(ReferenceEquals(error,windowError), "Preserva erro original da janela"); failureSequence.Add("report"); });
+Check(failureSequence.SequenceEqual(new[] { "stop", "report" }), "Falha Win32 interrompe operação e informa sem escapar");
+await ImportWindowGuard.RunAsync(() => {}, () => throw new Exception("Não deve interromper"), _ => throw new Exception("Não deve informar erro"));
+Console.WriteLine("PASS fechamento normal não cancela nem reporta falha");
+var cleanup = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+bool reportedBeforeCleanup = false;
+var guarded = ImportWindowGuard.RunAsync(() => throw new System.ComponentModel.Win32Exception(0),
+    () => cleanup.Task, _ => reportedBeforeCleanup = true);
+Check(reportedBeforeCleanup && !guarded.IsCompleted, "Informa falha sem esperar cartão responder ao cancelamento");
+cleanup.SetResult();
+await guarded;
+
 // Optional local verification; user data is never committed or used by CI.
 foreach (var path in args)
 {

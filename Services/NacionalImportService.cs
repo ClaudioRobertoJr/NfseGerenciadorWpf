@@ -9,6 +9,7 @@ public sealed class NacionalImportService(IDbContextFactory<ApplicationDbContext
 {
     public async Task<string> ImportAsync(string cnpj, X509Certificate2 cert, IProgress<string> progress, CancellationToken ct)
     {
+        ImportDiagnostics.Write("Preparando cliente HTTPS e certificado");
         using var handler = new HttpClientHandler { ClientCertificateOptions = ClientCertificateOption.Manual, AllowAutoRedirect = false };
         handler.ClientCertificates.Add(cert);
         using var http = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(120) };
@@ -18,6 +19,7 @@ public sealed class NacionalImportService(IDbContextFactory<ApplicationDbContext
         {
             ct.ThrowIfCancellationRequested();
             using var db = factory.CreateDbContext();
+            ImportDiagnostics.Write("Abrindo transação e controle de sincronização no banco");
             await using var tx = await db.Database.BeginTransactionAsync(ct);
             var resource = "NFSeADN:" + cnpj;
             // Database lock protects the cursor and duplicate check across computers.
@@ -25,7 +27,9 @@ public sealed class NacionalImportService(IDbContextFactory<ApplicationDbContext
             var state = await db.Set<NacionalSync>().FindAsync(new object[] { cnpj }, ct);
             if (state == null) { state = new NacionalSync { Cnpj = cnpj }; db.Add(state); }
             progress.Report($"Consultando após NSU {state.UltimoNsu}. Importadas nesta sessão: {imported}. O cartão pode solicitar o PIN.");
+            ImportDiagnostics.Write("Iniciando chamada HTTPS autenticada; aguardando TLS/cartão/API");
             var documents = await client.ReadAsync(state.UltimoNsu, cnpj, ct);
+            ImportDiagnostics.Write("Resposta da API recebida e validada");
             if (documents.Count == 0)
             {
                 await tx.RollbackAsync(ct);
@@ -75,6 +79,7 @@ public sealed class NacionalImportService(IDbContextFactory<ApplicationDbContext
             }
             await db.SaveChangesAsync(ct);
             await tx.CommitAsync(ct);
+            ImportDiagnostics.Write("Lote confirmado no banco");
             imported += batchImported; cancelled += batchCancelled; read += documents.Count;
             progress.Report($"{read} documentos examinados; {imported} notas importadas. Progresso salvo no NSU {state.UltimoNsu}.");
             await Task.Delay(1000, ct);

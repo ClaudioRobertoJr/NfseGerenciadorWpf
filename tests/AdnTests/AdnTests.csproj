@@ -3,6 +3,7 @@
   <ItemGroup>
     <Compile Include="../../Services/NacionalXml.cs" Link="NacionalXml.cs" />
     <Compile Include="../../Services/AdnClient.cs" Link="AdnClient.cs" />
+    <Compile Include="../../Services/ImportWindowGuard.cs" Link="ImportWindowGuard.cs" />
     <Compile Include="../../Models/*.cs" Link="Models/%(Filename)%(Extension)" />
   </ItemGroup>
 </Project>

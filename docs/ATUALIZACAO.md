@@ -1,4 +1,10 @@
-# Atualização 1.1.0 — NFS-e Nacional
+# Atualização 1.1.1 — tratamento de falha na janela de importação
+
+Esta versão trata a exceção Win32 registrada em `Dispatcher.GetMessage` ao executar a janela modal de importação. O erro anteriormente escapava do tratamento da consulta, encerrando o aplicativo. Agora solicita cancelamento, informa a falha e mantém os lotes já confirmados.
+
+Também registra as etapas de seleção do certificado, acesso ao banco e chamada HTTPS em `%LOCALAPPDATA%\NfseGerenciador\Logs\importacao-nacional.log`. Para localizar, pressione Win+R, cole `%LOCALAPPDATA%\NfseGerenciador\Logs` e pressione Enter.
+
+O registro recebido identifica a falha de janela, mas não prova sua origem no SafeNet. Esta é uma correção do encerramento sem tratamento e uma melhoria de diagnóstico; o funcionamento do PIN/A3 ainda precisa ser validado no computador do cartão. Não exige reinstalar o driver. Não há mudança de esquema do banco em relação à 1.1.0.
 
 Pacote para atualizar uma instalação Windows x64 existente. Não é instalador de SQL Server nem cria uma cópia dos dados em outra máquina.
 
