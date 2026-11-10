@@ -21,7 +21,8 @@ namespace NfseGerenciador.ViewModels
         private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
         private readonly LogService _logService; // Adicionado
 
-        public bool IsBusy { get; set; }
+        private bool _isBusy;
+        public bool IsBusy { get => _isBusy; set { if (_isBusy == value) return; _isBusy = value; OnPropertyChanged(nameof(IsBusy)); } }
         public ObservableCollection<NfseParcela> Resultados { get; set; } = new ObservableCollection<NfseParcela>();
         public ObservableCollection<Pagamento> TiposPagamento { get; set; }
         public List<string> OpcoesFiltroData { get; } = new List<string> { "Data de Emissão da NF-e", "Data de Vencimento da Parcela", "Data de Pagamento Efetivo da NF-e" };
@@ -113,15 +114,13 @@ namespace NfseGerenciador.ViewModels
                     if (FiltroStatusPagamento == "Pagas")
                     {
                         query = query.Where(p => p.Nfse.EstaPago);
-                        if (FiltroLocalPagamento.HasValue)
-                        {
-                            query = query.Where(p => p.Nfse.Local == FiltroLocalPagamento.Value);
-                        }
                     }
                     else if (FiltroStatusPagamento == "A Receber")
                     {
                         query = query.Where(p => !p.Nfse.EstaPago);
                     }
+                    if (FiltroLocalPagamento.HasValue && FiltroStatusPagamento != "A Receber")
+                        query = query.Where(p => p.Nfse.EstaPago && p.Nfse.Local == FiltroLocalPagamento.Value);
 
                     DateTime? dataInicio = FiltroDataInicial?.Date;
                     DateTime? dataFim = FiltroDataFinal?.Date.AddDays(1).AddTicks(-1);
@@ -230,15 +229,15 @@ namespace NfseGerenciador.ViewModels
                     foreach (var item in Resultados)
                     {
                         var linha = string.Join(";",
-                            $"\"{item.Nfse.Numero}\"", item.Nfse.DataEmissao.ToString("dd/MM/yyyy"),
+                            ReportCsv.Quote(item.Nfse.Numero), item.Nfse.DataEmissao.ToString("dd/MM/yyyy"),
                             item.Nfse.DataPagamentoEfetivo?.ToString("dd/MM/yyyy") ?? "N/A",
                             item.Nfse.EstaPago ? item.Nfse.Local.ToString() : "N/A",
-                            $"\"{item.Nfse.TomadorRazaoSocial}\"", $"\"{item.Nfse.TomadorCpfCnpj}\"",
+                            ReportCsv.Quote(item.Nfse.TomadorRazaoSocial), ReportCsv.Quote(item.Nfse.TomadorCpfCnpj),
                             item.NumeroParcela, item.ValorParcela.ToString("F2", CultureInfo.InvariantCulture),
                             item.DataVencimentoParcela.ToString("dd/MM/yyyy"),
                             item.Nfse.EstaPago ? "Paga" : "Pendente",
-                            $"\"{item.Nfse.Pagamento?.TipoRecebimento ?? "N/A"}\"",
-                            $"\"{item.Nfse.ClassificacaoEspecial ?? "Normal"}\""
+                            ReportCsv.Quote(item.Nfse.Pagamento?.TipoRecebimento ?? "N/A"),
+                            ReportCsv.Quote(item.Nfse.ClassificacaoEspecial ?? "Normal")
                         );
                         sb.AppendLine(linha);
                     }

@@ -137,7 +137,7 @@
                                           MinWidth="120" 
                                           Style="{StaticResource ControleFiltroFormularioStyle}"/>
 
-                                <TextBlock Text="Emissão De:" Style="{StaticResource LabelFiltroFormularioStyle}"/>
+                                <TextBlock Text="{Binding RotuloDataFiltro}" Style="{StaticResource LabelFiltroFormularioStyle}"/>
                                 <DatePicker SelectedDate="{Binding FiltroDataInicial}" Style="{StaticResource ControleFiltroFormularioStyle}"/>
                                 <TextBlock Text="Até:" Style="{StaticResource LabelFiltroFormularioStyle}"/>
                                 <DatePicker SelectedDate="{Binding FiltroDataFinal}" Style="{StaticResource ControleFiltroFormularioStyle}"/>
@@ -154,6 +154,8 @@
                     </StackPanel>
                 </Border>
 
+                <TextBlock DockPanel.Dock="Top" Text="{Binding ErroConsulta}" Foreground="DarkRed" TextWrapping="Wrap"/>
+                <ProgressBar DockPanel.Dock="Top" Height="3" IsIndeterminate="True" Visibility="{Binding IsCarregandoLista, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                 <DataGrid ItemsSource="{Binding Nfses}" SelectedItem="{Binding NfseSelecionada}" AutoGenerateColumns="False" IsReadOnly="True" AlternatingRowBackground="#FFF7F7F7">
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="Número" Binding="{Binding Numero}" Width="Auto"/>

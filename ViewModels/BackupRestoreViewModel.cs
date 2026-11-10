@@ -1,10 +1,11 @@
-﻿// NfseGerenciador/ViewModels/BackupRestoreViewModel.cs
+// NfseGerenciador/ViewModels/BackupRestoreViewModel.cs
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Win32;
 using NfseGerenciador.Services;
 using System;
 using System.ComponentModel;
+using System.Data;
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
@@ -74,9 +75,9 @@ namespace NfseGerenciador.ViewModels
                 try
                 {
                     string filePath = saveFileDialog.FileName;
-                    string sqlCommand = $"BACKUP DATABASE [{_databaseName}] TO DISK = '{filePath}' WITH NOFORMAT, NOINIT, NAME = N'{_databaseName}-Full Database Backup', SKIP, NOREWIND, NOUNLOAD, STATS = 10";
+                    string sqlCommand = $"BACKUP DATABASE {QuotedDatabaseName} TO DISK = @path WITH NOFORMAT, NOINIT, NOREWIND, NOUNLOAD, STATS = 10";
 
-                    await ExecuteSqlCommand(sqlCommand, "Backup");
+                    await ExecuteSqlCommand(sqlCommand, "Backup", filePath);
 
                     StatusMessage = $"Backup concluído com sucesso em: {filePath}";
                     MessageBox.Show(StatusMessage, "Sucesso", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -117,13 +118,7 @@ namespace NfseGerenciador.ViewModels
                     try
                     {
                         string filePath = openFileDialog.FileName;
-                        // Força o fechamento de outras conexões e restaura o banco de dados
-                        string sqlCommand = $@"
-                            ALTER DATABASE [{_databaseName}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
-                            RESTORE DATABASE [{_databaseName}] FROM DISK = '{filePath}' WITH REPLACE;
-                            ALTER DATABASE [{_databaseName}] SET MULTI_USER;";
-
-                        await ExecuteSqlCommand(sqlCommand, "Restore");
+                        await RestoreSelectedBackupAsync(filePath);
 
                         StatusMessage = "Restauração concluída com sucesso. Reinicie a aplicação.";
                         MessageBox.Show(StatusMessage, "Sucesso", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -134,15 +129,6 @@ namespace NfseGerenciador.ViewModels
                         _logService.LogError(ex, $"Falha ao restaurar o banco de dados '{_databaseName}'.");
                         MessageBox.Show("Ocorreu um erro durante a restauração. Verifique se não há outras janelas do sistema abertas e consulte o log de erros.", "Erro de Restauração", MessageBoxButton.OK, MessageBoxImage.Error);
 
-                        // Tenta colocar o banco de dados de volta ao modo multiusuário em caso de falha
-                        try
-                        {
-                            await ExecuteSqlCommand($"ALTER DATABASE [{_databaseName}] SET MULTI_USER;", "ResetUserMode");
-                        }
-                        catch (Exception resetEx)
-                        {
-                            _logService.LogError(resetEx, $"Falha ao redefinir o banco de dados para MULTI_USER após erro de restauração.");
-                        }
                     }
                     finally
                     {
@@ -152,7 +138,48 @@ namespace NfseGerenciador.ViewModels
             }
         }
 
-        private async Task ExecuteSqlCommand(string commandText, string operation)
+        private string QuotedDatabaseName => "[" + _databaseName.Replace("]", "]]") + "]";
+
+        internal async Task RestoreSelectedBackupAsync(string filePath)
+        {
+            var builder = new SqlConnectionStringBuilder(_connectionString) { InitialCatalog = "master", Pooling = false };
+            using var connection = new SqlConnection(builder.ConnectionString);
+            await connection.OpenAsync();
+            using var headerCommand = new SqlCommand("RESTORE HEADERONLY FROM DISK = @path;", connection) { CommandTimeout = 120 };
+            headerCommand.Parameters.Add("@path", SqlDbType.NVarChar, 4000).Value = filePath;
+            var headers = new DataTable();
+            using (var reader = await headerCommand.ExecuteReaderAsync()) headers.Load(reader);
+            int position = BackupSetSelector.SelectLatestFull(headers, _databaseName);
+
+            // Validate the selected set before disconnecting users or replacing any data.
+            using var verify = new SqlCommand($"RESTORE VERIFYONLY FROM DISK = @path WITH FILE = {position};", connection) { CommandTimeout = 120 };
+            verify.Parameters.Add("@path", SqlDbType.NVarChar, 4000).Value = filePath;
+            await verify.ExecuteNonQueryAsync();
+
+            using var restore = new SqlCommand($@"
+                ALTER DATABASE {QuotedDatabaseName} SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+                RESTORE DATABASE {QuotedDatabaseName} FROM DISK = @path WITH FILE = {position}, REPLACE;
+                ALTER DATABASE {QuotedDatabaseName} SET MULTI_USER;", connection) { CommandTimeout = 120 };
+            restore.Parameters.Add("@path", SqlDbType.NVarChar, 4000).Value = filePath;
+            try
+            {
+                await restore.ExecuteNonQueryAsync();
+            }
+            catch
+            {
+                try
+                {
+                    await ExecuteSqlCommand($"ALTER DATABASE {QuotedDatabaseName} SET MULTI_USER WITH ROLLBACK IMMEDIATE;", "ResetUserMode");
+                }
+                catch (Exception resetEx)
+                {
+                    _logService.LogError(resetEx, "Falha ao redefinir o banco de dados para MULTI_USER após erro de restauração.");
+                }
+                throw;
+            }
+        }
+
+        private async Task ExecuteSqlCommand(string commandText, string operation, string filePath = null)
         {
             // Usa uma connection string que aponta para o banco 'master' para poder manipular o banco de dados do aplicativo
             var masterDbBuilder = new SqlConnectionStringBuilder(_connectionString) { InitialCatalog = "master" };
@@ -162,6 +189,7 @@ namespace NfseGerenciador.ViewModels
                 await connection.OpenAsync();
                 using (var command = new SqlCommand(commandText, connection))
                 {
+                    if (filePath != null) command.Parameters.Add("@path", SqlDbType.NVarChar, 4000).Value = filePath;
                     command.CommandTimeout = 120; // Aumenta o timeout para operações longas
                     await command.ExecuteNonQueryAsync();
                 }

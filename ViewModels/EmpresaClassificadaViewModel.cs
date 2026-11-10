@@ -19,7 +19,7 @@ namespace NfseGerenciador.ViewModels
         private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
         private readonly LogService _logService;
         public List<string> TiposClassificacaoDisponiveis { get; } = new List<string> { "Plano de Saúde", "Convênio" };
-        public ObservableCollection<EmpresaClassificada> Empresas { get; set; }
+        public ObservableCollection<EmpresaClassificada> Empresas { get; set; } = new();
 
         private bool _isBusy;
         public bool IsBusy
@@ -54,16 +54,22 @@ namespace NfseGerenciador.ViewModels
             NovoCommand = new RelayCommand(Novo);
             ExcluirCommand = new RelayCommand(Excluir, PodeExcluir);
 
-            CarregarEmpresas();
+            _ = CarregarEmpresas();
         }
 
-        private async void CarregarEmpresas()
+        private async Task CarregarEmpresas()
         {
-            using (var context = _contextFactory.CreateDbContext())
+            try
             {
+                using var context = _contextFactory.CreateDbContext();
                 var empresasList = await context.EmpresasClassificadas.OrderBy(e => e.RazaoSocial).ToListAsync();
                 Empresas = new ObservableCollection<EmpresaClassificada>(empresasList);
                 OnPropertyChanged(nameof(Empresas));
+            }
+            catch (Exception ex)
+            {
+                _logService.LogError(ex, "Erro ao carregar empresas classificadas.");
+                MessageBox.Show("Não foi possível carregar as empresas. Consulte o log para detalhes.", "Erro", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -145,7 +151,7 @@ namespace NfseGerenciador.ViewModels
                         }
                     }
                 }
-                CarregarEmpresas();
+                await CarregarEmpresas();
                 Novo();
             }
             catch (Exception ex)
@@ -160,7 +166,11 @@ namespace NfseGerenciador.ViewModels
             }
         }
 
-        private void Novo() => EmpresaSelecionada = null;
+        private void Novo()
+        {
+            EmpresaSelecionada = null;
+            CarregarDadosDaEmpresaSelecionada();
+        }
         private bool PodeExcluir() => EmpresaSelecionada != null;
 
         private async Task Excluir()
@@ -180,7 +190,7 @@ namespace NfseGerenciador.ViewModels
                             MessageBox.Show("Empresa excluída com sucesso!", "Sucesso", MessageBoxButton.OK, MessageBoxImage.Information);
                         }
                     }
-                    CarregarEmpresas();
+                    await CarregarEmpresas();
                     Novo();
                 }
                 catch (Exception ex)

@@ -3,6 +3,7 @@ using System.Xml.Linq;
 using System.Linq;
 using System;
 using System.Globalization;
+using System.IO;
 using NfseGerenciador.Models;
 
 namespace NfseGerenciador.Services
@@ -23,7 +24,11 @@ namespace NfseGerenciador.Services
 
                 XNamespace ns = "http://www.abrasf.org.br/nfse.xsd";
 
-                foreach (XElement compNfseElement in doc.Descendants(ns + "CompNfse"))
+                var componentes = doc.Descendants(ns + "CompNfse").ToList();
+                if (componentes.Count == 0)
+                    throw new InvalidDataException("Formato XML não suportado: nenhum CompNfse ABRASF encontrado.");
+
+                foreach (XElement compNfseElement in componentes)
                 {
                     XElement nfseElement = compNfseElement.Element(ns + "Nfse");
 
@@ -34,11 +39,16 @@ namespace NfseGerenciador.Services
                         continue;
                     }
 
+                    if (nfseElement == null)
+                        throw new InvalidDataException("CompNfse sem elemento Nfse.");
+
                     if (nfseElement != null)
                     {
                         Nfse nfse = new Nfse();
 
                         XElement infNfseElement = nfseElement.Element(ns + "InfNfse");
+                        if (infNfseElement == null)
+                            throw new InvalidDataException("Nfse sem elemento InfNfse.");
                         if (infNfseElement != null)
                         {
                             nfse.Numero = infNfseElement.Element(ns + "Numero")?.Value ?? string.Empty;
@@ -131,6 +141,7 @@ namespace NfseGerenciador.Services
             catch (Exception ex)
             {
                 _logService.LogError(ex, $"Erro ao fazer parse do arquivo XML: {xmlFilePath}");
+                throw new InvalidDataException($"Não foi possível importar o arquivo XML '{xmlFilePath}': {ex.Message}", ex);
             }
             return nfses;
         }

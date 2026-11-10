@@ -162,7 +162,7 @@ namespace NfseGerenciador.ViewModels
                             .Select(g => new { MesAno = $"{g.Key.Month:00}/{g.Key.Year}", Valor = g.Sum(p => p.ValorParcela) })
                             .ToList();
 
-                        var todosOsMeses = fluxoRealizado.Select(f => f.MesAno).Union(fluxoPrevistoAgrupado.Select(f => f.MesAno)).Distinct().OrderBy(m => m).ToList();
+                        var todosOsMeses = fluxoRealizado.Select(f => f.MesAno).Union(fluxoPrevistoAgrupado.Select(f => f.MesAno)).Distinct().OrderBy(m => DateTime.ParseExact(m, "MM/yyyy", CultureInfo.InvariantCulture)).ToList();
                         var receitaPorLocal = notasPagas.GroupBy(n => n.Local).Select(g => new { Local = g.Key.ToString(), Total = g.Sum(n => n.ValorLiquidoNfse) }).ToList();
 
                         Application.Current.Dispatcher.Invoke(() =>

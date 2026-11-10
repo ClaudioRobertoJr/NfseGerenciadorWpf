@@ -1,4 +1,4 @@
-﻿// NfseGerenciador/ViewModels/GerenciadorNfseViewModel.cs
+// NfseGerenciador/ViewModels/GerenciadorNfseViewModel.cs
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Win32;
 using NfseGerenciador.Models;
@@ -24,6 +24,14 @@ namespace NfseGerenciador.ViewModels
         private int _pageSize = 50; // Quantidade de itens por página
         private int _totalItems;
 
+        private readonly Func<FiltroConsultaNotas, Task<PaginaNotas>> _consultar;
+        private int _consultaVersao;
+        private bool _isCarregandoLista;
+        private string _erroConsulta = "";
+        public Task CarregamentoAtual { get; private set; } = Task.CompletedTask;
+        public bool IsCarregandoLista { get => _isCarregandoLista; private set { _isCarregandoLista=value; OnPropertyChanged(nameof(IsCarregandoLista)); CommandManager.InvalidateRequerySuggested(); } }
+        public string ErroConsulta { get => _erroConsulta; private set { _erroConsulta=value; OnPropertyChanged(nameof(ErroConsulta)); } }
+        public string RotuloDataFiltro => FiltroStatus == "Pagas" ? "Pagamento de:" : "Emissão de:";
         private bool _isBusy;
         private bool _isDetalhesVisible;
         private Nfse _nfseSelecionada;
@@ -54,13 +62,20 @@ namespace NfseGerenciador.ViewModels
 
         // Construtor Padrão
         public GerenciadorNfseViewModel(IDbContextFactory<ApplicationDbContext> contextFactory, NfseXmlParser parser, LogService logService)
+            : this(contextFactory, parser, logService, null, null) { }
+
+        internal GerenciadorNfseViewModel(IDbContextFactory<ApplicationDbContext> contextFactory, NfseXmlParser parser, LogService logService,
+            Func<FiltroConsultaNotas, Task<PaginaNotas>>? consultar, IEnumerable<Pagamento>? pagamentos)
         {
             _contextFactory = contextFactory;
             _parser = parser;
             _logService = logService;
 
-            using (var context = _contextFactory.CreateDbContext())
+            _consultar = consultar ?? new ConsultaNotasService(contextFactory).CarregarAsync;
+            if (pagamentos != null) TiposPagamento = new ObservableCollection<Pagamento>(pagamentos);
+            else
             {
+                using var context = _contextFactory.CreateDbContext();
                 TiposPagamento = new ObservableCollection<Pagamento>(context.Pagamentos.OrderBy(p => p.TipoRecebimento).ToList());
             }
 
@@ -69,8 +84,8 @@ namespace NfseGerenciador.ViewModels
             ExcluirNotaCommand = new RelayCommand(ExcluirNotaAsync, () => NfseSelecionada != null);
             LimparFiltrosCommand = new RelayCommand(LimparFiltros);
             SalvarPagamentoCommand = new RelayCommand(SalvarPagamentoAsync, () => NfseSelecionada != null && PodeSalvarPagamento());
-            PaginaAnteriorCommand = new RelayCommand(async () => await MudarPagina(-1), () => CurrentPage > 1);
-            ProximaPaginaCommand = new RelayCommand(async () => await MudarPagina(1), () => CurrentPage < TotalPages);
+            PaginaAnteriorCommand = new RelayCommand(async () => await MudarPagina(-1), () => !IsCarregandoLista && CurrentPage > 1);
+            ProximaPaginaCommand = new RelayCommand(async () => await MudarPagina(1), () => !IsCarregandoLista && CurrentPage < TotalPages);
 
             AplicarFiltroCompleto(true);
         }
@@ -100,7 +115,7 @@ namespace NfseGerenciador.ViewModels
         public int PageSize
         {
             get => _pageSize;
-            set { _pageSize = value; OnPropertyChanged(nameof(PageSize)); AplicarFiltroCompleto(true); }
+            set { if (value <= 0) throw new ArgumentOutOfRangeException(nameof(value)); _pageSize = value; OnPropertyChanged(nameof(PageSize)); AplicarFiltroCompleto(true); }
         }
 
         public int TotalItems
@@ -109,7 +124,7 @@ namespace NfseGerenciador.ViewModels
             set { _totalItems = value; OnPropertyChanged(nameof(TotalItems)); OnPropertyChanged(nameof(TotalPages)); OnPropertyChanged(nameof(StatusPaginacao)); }
         }
 
-        public int TotalPages => (int)Math.Ceiling((double)TotalItems / PageSize);
+        public int TotalPages => Math.Max(1, (int)Math.Ceiling((double)TotalItems / PageSize));
 
         public string StatusPaginacao => $"Página {CurrentPage} de {TotalPages} ({TotalItems} registros)";
 
@@ -131,7 +146,7 @@ namespace NfseGerenciador.ViewModels
             }
         }
         public string FiltroTexto { get => _filtroTexto; set { _filtroTexto = value; OnPropertyChanged(nameof(FiltroTexto)); AplicarFiltroCompleto(true); } }
-        public string FiltroStatus { get => _filtroStatus; set { _filtroStatus = value; OnPropertyChanged(nameof(FiltroStatus)); AplicarFiltroCompleto(true); } }
+        public string FiltroStatus { get => _filtroStatus; set { _filtroStatus = value; OnPropertyChanged(nameof(FiltroStatus)); OnPropertyChanged(nameof(RotuloDataFiltro)); AplicarFiltroCompleto(true); } }
         public DateTime? FiltroDataInicial { get => _filtroDataInicial; set { _filtroDataInicial = value; OnPropertyChanged(nameof(FiltroDataInicial)); AplicarFiltroCompleto(true); } }
         public DateTime? FiltroDataFinal { get => _filtroDataFinal; set { _filtroDataFinal = value; OnPropertyChanged(nameof(FiltroDataFinal)); AplicarFiltroCompleto(true); } }
         public bool DetalhesEstaPago { get => _detalhesEstaPago; set { _detalhesEstaPago = value; OnPropertyChanged(nameof(DetalhesEstaPago)); CommandManager.InvalidateRequerySuggested(); } }
@@ -155,6 +170,7 @@ namespace NfseGerenciador.ViewModels
                     await Task.Run(async () =>
                     {
                         int notasImportadas = 0, notasDuplicadas = 0;
+                        var chavesDoLote = new ChavesImportacaoXml();
                         using var importContext = _contextFactory.CreateDbContext();
 
                         foreach (string filePath in openFileDialog.FileNames)
@@ -162,7 +178,7 @@ namespace NfseGerenciador.ViewModels
                             var nfsesDoArquivo = _parser.Parse(filePath);
                             foreach (var nfseNova in nfsesDoArquivo)
                             {
-                                if (!await importContext.Nfses.AnyAsync(n => n.Numero == nfseNova.Numero && n.PrestadorCnpj == nfseNova.PrestadorCnpj))
+                                if (chavesDoLote.Registrar(nfseNova.Numero, nfseNova.PrestadorCnpj) && !await importContext.Nfses.AnyAsync(n => n.Numero == nfseNova.Numero && n.PrestadorCnpj == nfseNova.PrestadorCnpj))
                                 {
                                     var empresa = await importContext.EmpresasClassificadas.FirstOrDefaultAsync(e => e.Cnpj == nfseNova.TomadorCpfCnpj);
                                     if (empresa != null) nfseNova.ClassificacaoEspecial = empresa.TipoClassificacao;
@@ -183,7 +199,7 @@ namespace NfseGerenciador.ViewModels
                 catch (Exception ex)
                 {
                     _logService.LogError(ex, "Falha crítica na importação de XMLs.");
-                    MessageBox.Show("Ocorreu um erro inesperado. Verifique o arquivo de log para detalhes.", "Erro de Importação", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show(ex is System.IO.InvalidDataException ? ex.Message + "\nNenhuma nota deste lote foi gravada." : "Ocorreu um erro inesperado. Verifique o arquivo de log para detalhes.", "Erro de Importação", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
                 finally
                 {
@@ -219,10 +235,18 @@ namespace NfseGerenciador.ViewModels
 
         private async Task SalvarPagamentoAsync()
         {
+            var selecionada = NfseSelecionada;
+            if (selecionada == null || !PodeSalvarPagamento()) return;
+            var local = DetalhesLocalPagamento;
+            var pago = DetalhesEstaPago;
+            var data = DetalhesDataPagamento;
+            var pagamentoId = DetalhesTipoRecebimento?.Id;
+            var parcelas = DetalhesNumParcelas;
+            IsBusy = true;
             try
             {
                 using var context = _contextFactory.CreateDbContext();
-                var notaParaAtualizar = await context.Nfses.Include(n => n.Parcelas).FirstOrDefaultAsync(n => n.Id == NfseSelecionada.Id);
+                var notaParaAtualizar = await context.Nfses.Include(n => n.Parcelas).FirstOrDefaultAsync(n => n.Id == selecionada.Id);
                     if (notaParaAtualizar == null) return;
                     if (notaParaAtualizar.Cancelada)
                     {
@@ -230,18 +254,19 @@ namespace NfseGerenciador.ViewModels
                         return;
                     }
 
-                notaParaAtualizar.Local = DetalhesLocalPagamento;
-                notaParaAtualizar.EstaPago = DetalhesEstaPago;
+                notaParaAtualizar.Local = local;
+                notaParaAtualizar.EstaPago = pago;
                 context.NfseParcelas.RemoveRange(notaParaAtualizar.Parcelas);
+                notaParaAtualizar.Parcelas.Clear();
 
-                if (DetalhesEstaPago)
+                if (pago)
                 {
-                    notaParaAtualizar.DataPagamentoEfetivo = DetalhesDataPagamento;
-                    notaParaAtualizar.PagamentoId = DetalhesTipoRecebimento?.Id;
-                    decimal valorParcela = Math.Round(notaParaAtualizar.ValorLiquidoNfse / DetalhesNumParcelas, 2);
-                    for (int i = 1; i <= DetalhesNumParcelas; i++)
+                    notaParaAtualizar.DataPagamentoEfetivo = data;
+                    notaParaAtualizar.PagamentoId = pagamentoId;
+                    decimal valorParcela = Math.Round(notaParaAtualizar.ValorLiquidoNfse / parcelas, 2);
+                    for (int i = 1; i <= parcelas; i++)
                     {
-                        notaParaAtualizar.Parcelas.Add(new NfseParcela { NumeroParcela = i, ValorParcela = (i == DetalhesNumParcelas) ? notaParaAtualizar.ValorLiquidoNfse - (valorParcela * (DetalhesNumParcelas - 1)) : valorParcela, DataVencimentoParcela = DetalhesDataPagamento.Value.AddMonths(i - 1), DataPagamentoParcela = DetalhesDataPagamento, ParcelaPaga = true });
+                        notaParaAtualizar.Parcelas.Add(new NfseParcela { NumeroParcela = i, ValorParcela = (i == parcelas) ? notaParaAtualizar.ValorLiquidoNfse - (valorParcela * (parcelas - 1)) : valorParcela, DataVencimentoParcela = data.Value.AddMonths(i - 1), DataPagamentoParcela = data, ParcelaPaga = true });
                     }
                     notaParaAtualizar.DataPrevistaRecebimento = notaParaAtualizar.Parcelas.Last().DataVencimentoParcela;
                 }
@@ -254,7 +279,7 @@ namespace NfseGerenciador.ViewModels
                 }
 
                 await context.SaveChangesAsync();
-                AplicarFiltroCompleto(false);
+                await AplicarFiltroCompleto(false);
                 MessageBox.Show("Pagamento salvo com sucesso!");
             }
             catch (Exception ex)
@@ -262,110 +287,76 @@ namespace NfseGerenciador.ViewModels
                 _logService.LogError(ex, $"Erro ao salvar pagamento da nota ID: {NfseSelecionada?.Id}");
                 MessageBox.Show("Não foi possível salvar o pagamento. Verifique o log.", "Erro", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+            finally { IsBusy = false; }
         }
 
         private void LimparFiltros()
         {
-            FiltroStatus = "Todas";
-            FiltroDataInicial = null;
-            FiltroDataFinal = null;
-            FiltroTexto = "";
-            _filtroLocal = null; // Limpa o filtro de local também
+            _filtroStatus = "Todas"; _filtroDataInicial = null; _filtroDataFinal = null; _filtroTexto = ""; _filtroLocal = null;
+            foreach (var name in new[] { nameof(FiltroStatus), nameof(FiltroDataInicial), nameof(FiltroDataFinal), nameof(FiltroTexto), nameof(RotuloDataFiltro) }) OnPropertyChanged(name);
             AplicarFiltroCompleto(true);
         }
         #endregion
 
         #region Lógica Principal
-        private async Task AplicarFiltroCompleto(bool resetarPagina = false)
+        private Task AplicarFiltroCompleto(bool resetarPagina = false, int? pagina = null)
+            => CarregamentoAtual = CarregarListaAsync(resetarPagina ? 1 : pagina ?? CurrentPage);
+
+        private async Task CarregarListaAsync(int pagina)
         {
-            if (resetarPagina)
+            int versao = ++_consultaVersao;
+            var filtro = new FiltroConsultaNotas(FiltroStatus, FiltroTexto, _filtroLocal, FiltroDataInicial, FiltroDataFinal, pagina, PageSize);
+            IsCarregandoLista = true;
+            ErroConsulta = "";
+            try
             {
-                CurrentPage = 1;
+                var resultado = await _consultar(filtro);
+                if (versao != _consultaVersao) return;
+                NfseSelecionada = null;
+                // Replace the collection atomically: the view never sees a partially updated page.
+                Nfses = new ObservableCollection<Nfse>(resultado.Notas);
+                OnPropertyChanged(nameof(Nfses));
+                TotalItems = resultado.Total;
+                CurrentPage = resultado.Pagina;
             }
-
-            using (var context = _contextFactory.CreateDbContext())
+            catch (Exception ex)
             {
-                IQueryable<Nfse> query = context.Nfses
-                                                 .Where(n => !n.Excluida)
-                                                 .Include(n => n.Pagamento);
-
-                if (FiltroStatus == "Pagas") query = query.Where(n => n.EstaPago);
-                else if (FiltroStatus == "Em Aberto") query = query.Where(n => !n.EstaPago && !n.Cancelada);
-
-                // Adicionado filtro por Local
-                if (!string.IsNullOrEmpty(_filtroLocal) && Enum.TryParse<LocalPagamento>(_filtroLocal, out var local))
-                {
-                    query = query.Where(n => n.Local == local);
-                }
-
-                // Data de Pagamento para notas pagas, Data de Emissão para as demais
-                if (FiltroStatus == "Pagas")
-                {
-                    if (FiltroDataInicial.HasValue) query = query.Where(n => n.DataPagamentoEfetivo >= FiltroDataInicial.Value.Date);
-                    if (FiltroDataFinal.HasValue) query = query.Where(n => n.DataPagamentoEfetivo <= FiltroDataFinal.Value.Date.AddDays(1).AddTicks(-1));
-                }
-                else
-                {
-                    if (FiltroDataInicial.HasValue) query = query.Where(n => n.DataEmissao >= FiltroDataInicial.Value.Date);
-                    if (FiltroDataFinal.HasValue) query = query.Where(n => n.DataEmissao <= FiltroDataFinal.Value.Date.AddDays(1).AddTicks(-1));
-                }
-
-
-                if (!string.IsNullOrWhiteSpace(FiltroTexto))
-                {
-                    string filtro = FiltroTexto.ToLower().Trim();
-                    query = query.Where(n => n.TomadorRazaoSocial.ToLower().Contains(filtro) ||
-                                             n.Numero.Contains(filtro) ||
-                                             n.TomadorCpfCnpj.Replace(".", "").Replace("-", "").Replace("/", "").Contains(filtro));
-                }
-
-                TotalItems = await query.CountAsync();
-
-                var resultados = await query.OrderByDescending(n => n.DataEmissao)
-                                            .ThenBy(n => n.Numero)
-                                            .Skip((CurrentPage - 1) * PageSize)
-                                            .Take(PageSize)
-                                            .ToListAsync();
-                Nfses.Clear();
-                resultados.ForEach(n => Nfses.Add(n));
-
-                CommandManager.InvalidateRequerySuggested();
+                if (versao != _consultaVersao) return;
+                _logService.LogError(ex, "Consultar notas e paginação");
+                ErroConsulta = ex is InvalidOperationException && filtro.Inicio?.Date > filtro.Fim?.Date
+                    ? ex.Message : "Não foi possível carregar a lista. A página anterior foi mantida. Clique em Atualizar para tentar novamente; detalhes no log.";
             }
+            finally { if (versao == _consultaVersao) IsCarregandoLista = false; }
         }
 
-        private async Task MudarPagina(int direcao)
-        {
-            CurrentPage += direcao;
-            await AplicarFiltroCompleto(false);
-        }
-
+        private Task MudarPagina(int direcao)
+            => AplicarFiltroCompleto(false, Math.Clamp(CurrentPage + direcao, 1, TotalPages));
 
         private async void CarregarDetalhesPagamento()
         {
-            if (NfseSelecionada == null)
+            var nota = NfseSelecionada;
+            IsDetalhesVisible = false;
+            if (nota == null) return;
+            try
             {
-                IsDetalhesVisible = false;
-                return;
+                using var context = _contextFactory.CreateDbContext();
+                var parcelas = await context.NfseParcelas.AsNoTracking().Where(p => p.NfseId == nota.Id).ToListAsync();
+                if (!ReferenceEquals(nota, NfseSelecionada)) return;
+                nota.Parcelas = parcelas;
+                DetalhesEstaPago = nota.EstaPago;
+                DetalhesLocalPagamento = nota.Local;
+                DetalhesDataPagamento = nota.DataPagamentoEfetivo ?? (nota.EstaPago ? DateTime.Today : (DateTime?)null);
+                DetalhesTipoRecebimento = TiposPagamento.FirstOrDefault(p => p.Id == nota.PagamentoId);
+                DetalhesNumParcelas = parcelas.Count > 0 ? parcelas.Count : 1;
+                DetalhesEhAVista = DetalhesNumParcelas <= 1;
+                IsDetalhesVisible = true;
             }
-
-            DetalhesEstaPago = NfseSelecionada.EstaPago;
-            DetalhesLocalPagamento = NfseSelecionada.Local;
-            DetalhesDataPagamento = NfseSelecionada.DataPagamentoEfetivo ?? (DetalhesEstaPago ? DateTime.Today : (DateTime?)null);
-            DetalhesTipoRecebimento = NfseSelecionada.PagamentoId.HasValue ? TiposPagamento.FirstOrDefault(p => p.Id == NfseSelecionada.PagamentoId) : null;
-
-            using (var context = _contextFactory.CreateDbContext())
-            {
-                var parcelas = await context.NfseParcelas.Where(p => p.NfseId == NfseSelecionada.Id).ToListAsync();
-                DetalhesNumParcelas = parcelas.Any() ? parcelas.Count : 1;
-            }
-
-            DetalhesEhAVista = DetalhesNumParcelas <= 1;
-            IsDetalhesVisible = true;
+            catch (Exception ex) { _logService.LogError(ex, "Carregar parcelas da nota"); }
         }
 
         private bool PodeSalvarPagamento()
         {
-            if (NfseSelecionada == null || NfseSelecionada.Cancelada) return false;
+            if (!IsDetalhesVisible || NfseSelecionada == null || NfseSelecionada.Cancelada) return false;
             return !DetalhesEstaPago || (DetalhesDataPagamento.HasValue && DetalhesTipoRecebimento != null && DetalhesNumParcelas > 0);
         }
         #endregion

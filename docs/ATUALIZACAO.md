@@ -1,3 +1,7 @@
+# Novidades da versão 1.1.5
+
+Correções de paginação/filtros, comandos na interface, importação XML, seleção de pagamento, relatórios, dashboard, cadastro e seleção de conjunto de backup. Sem nova migração. Consulte [revisão e validação](REVISAO-1.1.5.md).
+
 # Novidades da versão 1.1.4
 
 Recuperado o botão **Importar baixas** no topo da tela de notas, com o fluxo Excel, prévia e confirmação da branch antiga. Notas fiscalmente canceladas ficam bloqueadas para novas baixas. Notas, parcelas, pagamentos e NSU são preservados. [Como usar e validar](BAIXAS.md).

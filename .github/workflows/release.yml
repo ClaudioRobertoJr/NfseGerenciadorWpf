@@ -36,7 +36,7 @@ jobs:
         shell: pwsh
         run: |
           Remove-Item -LiteralPath package/app/appsettings.json -ErrorAction SilentlyContinue
-          Copy-Item scripts/Atualizar.ps1,scripts/Atualizar.cmd,docs/ATUALIZACAO.md,docs/BAIXAS.md package/
+          Copy-Item scripts/Atualizar.ps1,scripts/Atualizar.cmd,docs/ATUALIZACAO.md,docs/BAIXAS.md,docs/REVISAO-1.1.5.md package/
           foreach ($exe in 'NfseGerenciador.exe','NfseAdnWorker.exe') {
             if (-not (Test-Path "package/app/$exe")) { throw "Executável ausente: $exe" }
           }

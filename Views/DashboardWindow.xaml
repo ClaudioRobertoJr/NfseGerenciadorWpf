@@ -32,7 +32,7 @@
                 </Border>
                 <Border Style="{StaticResource KpiCardStyle}">
                     <StackPanel>
-                        <TextBlock Text="Total Pendente (Vencido)" Style="{StaticResource KpiTitleStyle}"/>
+                        <TextBlock Text="Pendente Emitido no Período" Style="{StaticResource KpiTitleStyle}"/>
                         <TextBlock Text="{Binding TotalPendente}" Style="{StaticResource KpiValueStyle}" Foreground="{StaticResource CorStatusPendenteBrush}"/>
                     </StackPanel>
                 </Border>
