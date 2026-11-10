@@ -1,4 +1,4 @@
-﻿using NfseGerenciador.Services;
+using NfseGerenciador.Services;
 using System.Net;
 using System.Text.Json;
 
@@ -8,6 +8,11 @@ if (args.FirstOrDefault() == "--fake-worker")
     while (await Console.In.ReadLineAsync() is { } line)
     {
         var request = JsonSerializer.Deserialize<AdnWorkerRequest>(line)!;
+        if (request.Command == "Select")
+        {
+            Console.WriteLine(JsonSerializer.Serialize(new AdnWorkerResponse(null, null, Selected: mode != "cancel", Cancelled: mode == "cancel")));
+            continue;
+        }
         if (mode == "exit") return;
         if (mode == "hang") { await Task.Delay(30000); return; }
         if (mode == "malformed") { Console.WriteLine("invalid-json"); return; }
@@ -85,27 +90,37 @@ System.Diagnostics.ProcessStartInfo FakeWorker(string mode)
     info.ArgumentList.Add("--fake-worker"); info.ArgumentList.Add(mode);
     return info;
 }
-using (var worker = new AdnProcessClient("synthetic", FakeWorker("success")))
+using (var selection = new AdnProcessClient(FakeWorker("success")))
+{
+    await selection.SelectAsync(default);
+    Check((await selection.ReadAsync(0, "12345678000195", default)).Count == 1, "Selecao no auxiliar permite consulta posterior");
+}
+using (var selection = new AdnProcessClient(FakeWorker("cancel")))
+{
+    try { await selection.SelectAsync(default); throw new Exception("Cancelamento da selecao ignorado"); }
+    catch (OperationCanceledException) { Console.WriteLine("PASS cancelar selecao nao vira lote vazio ou erro TLS"); }
+}
+using (var worker = new AdnProcessClient(FakeWorker("success")))
 {
     Check((await worker.ReadAsync(50, "12345678000195", default))[0].NSU == 51, "IPC retorna lote do processo filho");
     Check((await worker.ReadAsync(51, "12345678000195", default))[0].NSU == 52, "Reutiliza processo entre lotes");
 }
-using (var worker = new AdnProcessClient("synthetic", FakeWorker("error")))
+using (var worker = new AdnProcessClient(FakeWorker("error")))
 {
     try { await worker.ReadAsync(0, "12345678000195", default); throw new Exception("Erro ignorado"); }
     catch (InvalidOperationException ex) { Check(ex.Message.Contains("Falha TLS simulada"), "Preserva falha TLS do processo filho"); }
 }
-using (var worker = new AdnProcessClient("synthetic", FakeWorker("exit")))
+using (var worker = new AdnProcessClient(FakeWorker("exit")))
 {
     try { await worker.ReadAsync(0, "12345678000195", default); throw new Exception("Saida ignorada"); }
     catch (IOException) { Console.WriteLine("PASS encerramento do filho interrompe sem lote vazio"); }
 }
-using (var worker = new AdnProcessClient("synthetic", FakeWorker("malformed")))
+using (var worker = new AdnProcessClient(FakeWorker("malformed")))
 {
     try { await worker.ReadAsync(0, "12345678000195", default); throw new Exception("JSON invalido aceito"); }
     catch (JsonException) { Console.WriteLine("PASS rejeita resposta IPC malformada"); }
 }
-using (var worker = new AdnProcessClient("synthetic", FakeWorker("hang")))
+using (var worker = new AdnProcessClient(FakeWorker("hang")))
 using (var cancel = new CancellationTokenSource(TimeSpan.FromMilliseconds(500)))
 {
     var watch = System.Diagnostics.Stopwatch.StartNew();

@@ -1,6 +1,8 @@
-# Atualização 1.1.2 — conexão com o cartão em processo separado
+# Atualização 1.1.3 — seleção e conexão com o cartão no auxiliar
 
-Esta versão executa a conexão HTTPS e a autenticação com o cartão no auxiliar `NfseAdnWorker.exe`, separado das janelas WPF. O teste isolado com o A3 SafeNet solicitou o PIN e retornou 50 documentos em 7,1 segundos na máquina afetada. Essa evidência orientou a alteração; a importação integrada ainda precisa ser validada nessa máquina.
+A versão 1.1.2 separou o HTTPS, mas ainda enumerava e selecionava certificados dentro do gerenciador; a falha da janela persistiu. A 1.1.3 move também essas etapas para `NfseAdnWorker.exe`. O gerenciador não abre o repositório de certificados nem recebe objetos de certificado. O auxiliar seleciona o certificado na thread principal STA e executa o HTTPS no pool de threads, como no teste isolado que solicitou o PIN e retornou 50 documentos em 7,1 segundos na máquina afetada. A importação integrada ainda precisa ser validada nessa máquina.
+
+A seleção acontece antes de iniciar a transação do banco. Fechar o seletor cancela a operação; Parar também encerra o auxiliar enquanto aguarda seleção ou PIN. Os limites são 5 minutos para selecionar o certificado, 120 segundos para cada consulta HTTPS e 150 segundos para aguardar a resposta do auxiliar à consulta.
 
 Também registra as etapas de seleção do certificado, acesso ao banco e chamada HTTPS em `%LOCALAPPDATA%\NfseGerenciador\Logs\importacao-nacional.log`. Para localizar, pressione Win+R, cole `%LOCALAPPDATA%\NfseGerenciador\Logs` e pressione Enter.
 

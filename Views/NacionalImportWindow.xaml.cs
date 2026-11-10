@@ -1,8 +1,7 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using NfseGerenciador.Models;
 using NfseGerenciador.Services;
 using System.ComponentModel;
-using System.Security.Cryptography.X509Certificates;
 using System.Windows;
 
 namespace NfseGerenciador.Views;
@@ -26,22 +25,11 @@ public partial class NacionalImportWindow : Window
         if (cnpj.Length != 14) { StatusText.Text = "Informe o CNPJ completo com 14 dígitos."; return; }
         try
         {
-            ImportDiagnostics.Write("Lendo certificados disponíveis no Windows");
-            using var store = new X509Store(StoreName.My, StoreLocation.CurrentUser);
-            store.Open(OpenFlags.ReadOnly);
-            var valid = new X509Certificate2Collection(store.Certificates.Cast<X509Certificate2>()
-                .Where(x => x.HasPrivateKey && x.NotBefore <= DateTime.Now && x.NotAfter > DateTime.Now).ToArray());
-            if (valid.Count == 0) { StatusText.Text = "Nenhum certificado disponível. Conecte o cartão e confira o driver da leitora."; return; }
-            ImportDiagnostics.Write("Abrindo seleção de certificado");
-            var selection = X509Certificate2UI.SelectFromCollection(valid, "Certificado para NFS-e", "Escolha o e-CPF com procuração ou o certificado da instituição.", X509SelectionFlag.SingleSelection);
-            if (selection.Count == 0) return;
-            ImportDiagnostics.Write("Certificado selecionado");
-            using var cert = selection[0];
             _cancel = new CancellationTokenSource();
             StartButton.IsEnabled = false; CnpjInput.IsEnabled = false; CancelButton.IsEnabled = true;
             var progress = new Progress<string>(text => { if (!_windowFailed) StatusText.Text = text; });
             var token = _cancel.Token;
-            _activeImport = Task.Run(() => new NacionalImportService(_factory).ImportAsync(cnpj, cert, progress, token));
+            _activeImport = Task.Run(() => new NacionalImportService(_factory).ImportAsync(cnpj, progress, token));
             var result = await _activeImport;
             if (!_windowFailed) StatusText.Text = result;
             ImportDiagnostics.Write("Importação concluída");
