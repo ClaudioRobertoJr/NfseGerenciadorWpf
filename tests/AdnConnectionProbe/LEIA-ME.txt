@@ -1,0 +1,17 @@
+TESTE ISOLADO DE CONEXAO A3 - NAO E UMA ATUALIZACAO DO GERENCIADOR
+
+1. Feche completamente o NFS-e Gerenciador.
+2. Extraia o ZIP para uma pasta e abra TesteConexaoA3.exe.
+3. Informe o CNPJ representado, somente os 14 digitos.
+4. Selecione o mesmo certificado e informe o PIN somente na janela do cartao.
+5. Aguarde o resultado e envie o arquivo teste-conexao-a3-*.log cujo caminho aparece no final.
+
+O teste realiza uma unica consulta de leitura no ADN de producao, a partir do NSU 0.
+Usa o mesmo AdnClient e transporte HTTPS do gerenciador, com timeout de 120 segundos,
+mas executa em processo separado, sem criar janelas WPF nem acessar o banco SQL.
+Nao importa notas, nao altera o progresso, nao salva XML nem solicita o PIN no console.
+O Windows/driver pode reutilizar o PIN se ele ja estiver em cache. Anote se houve pedido de PIN.
+
+O resultado ajuda a verificar se a falha se reproduz fora da interface do gerenciador.
+Sucesso nao comprova que a importacao completa esta corrigida.
+Informe tambem a versao exibida em Sobre no SafeNet Authentication Client.

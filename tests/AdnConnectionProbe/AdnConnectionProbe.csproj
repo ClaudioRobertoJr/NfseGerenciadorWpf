@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <DisableWinExeOutputInference>true</DisableWinExeOutputInference>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>TesteConexaoA3</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../Services/AdnClient.cs" Link="AdnClient.cs" />
+  </ItemGroup>
+</Project>
