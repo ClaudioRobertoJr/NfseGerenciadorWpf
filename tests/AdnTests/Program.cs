@@ -1,6 +1,22 @@
-using NfseGerenciador.Services;
+﻿using NfseGerenciador.Services;
 using System.Net;
 using System.Text.Json;
+
+if (args.FirstOrDefault() == "--fake-worker")
+{
+    var mode = args[1];
+    while (await Console.In.ReadLineAsync() is { } line)
+    {
+        var request = JsonSerializer.Deserialize<AdnWorkerRequest>(line)!;
+        if (mode == "exit") return;
+        if (mode == "hang") { await Task.Delay(30000); return; }
+        if (mode == "malformed") { Console.WriteLine("invalid-json"); return; }
+        Console.WriteLine(JsonSerializer.Serialize(mode == "error"
+            ? new AdnWorkerResponse(null, "Falha TLS simulada")
+            : new AdnWorkerResponse([new() { NSU=request.Nsu+1, ArquivoXml="sintetico" }], null)));
+    }
+    return;
+}
 
 const string key = "12345678901234567890123456789012345678901234567890";
 string Xml(string date = "2026-11-01T00:30:00-03:00", string emit = "12345678000195") => $"""
@@ -60,6 +76,42 @@ var guarded = ImportWindowGuard.RunAsync(() => throw new System.ComponentModel.W
 Check(reportedBeforeCleanup && !guarded.IsCompleted, "Informa falha sem esperar cartão responder ao cancelamento");
 cleanup.SetResult();
 await guarded;
+
+System.Diagnostics.ProcessStartInfo FakeWorker(string mode)
+{
+    var info = new System.Diagnostics.ProcessStartInfo(Environment.ProcessPath!);
+    if (Path.GetFileNameWithoutExtension(Environment.ProcessPath!).Equals("dotnet", StringComparison.OrdinalIgnoreCase))
+        info.ArgumentList.Add(typeof(FakeHandler).Assembly.Location);
+    info.ArgumentList.Add("--fake-worker"); info.ArgumentList.Add(mode);
+    return info;
+}
+using (var worker = new AdnProcessClient("synthetic", FakeWorker("success")))
+{
+    Check((await worker.ReadAsync(50, "12345678000195", default))[0].NSU == 51, "IPC retorna lote do processo filho");
+    Check((await worker.ReadAsync(51, "12345678000195", default))[0].NSU == 52, "Reutiliza processo entre lotes");
+}
+using (var worker = new AdnProcessClient("synthetic", FakeWorker("error")))
+{
+    try { await worker.ReadAsync(0, "12345678000195", default); throw new Exception("Erro ignorado"); }
+    catch (InvalidOperationException ex) { Check(ex.Message.Contains("Falha TLS simulada"), "Preserva falha TLS do processo filho"); }
+}
+using (var worker = new AdnProcessClient("synthetic", FakeWorker("exit")))
+{
+    try { await worker.ReadAsync(0, "12345678000195", default); throw new Exception("Saida ignorada"); }
+    catch (IOException) { Console.WriteLine("PASS encerramento do filho interrompe sem lote vazio"); }
+}
+using (var worker = new AdnProcessClient("synthetic", FakeWorker("malformed")))
+{
+    try { await worker.ReadAsync(0, "12345678000195", default); throw new Exception("JSON invalido aceito"); }
+    catch (JsonException) { Console.WriteLine("PASS rejeita resposta IPC malformada"); }
+}
+using (var worker = new AdnProcessClient("synthetic", FakeWorker("hang")))
+using (var cancel = new CancellationTokenSource(TimeSpan.FromMilliseconds(500)))
+{
+    var watch = System.Diagnostics.Stopwatch.StartNew();
+    try { await worker.ReadAsync(0, "12345678000195", cancel.Token); throw new Exception("Cancelamento ignorado"); }
+    catch (OperationCanceledException) { Check(watch.Elapsed < TimeSpan.FromSeconds(5), "Cancelar interrompe espera do PIN sem travar interface"); }
+}
 
 // Optional local verification; user data is never committed or used by CI.
 foreach (var path in args)

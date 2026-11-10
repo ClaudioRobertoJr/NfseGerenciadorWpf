@@ -1,10 +1,12 @@
-# Atualização 1.1.1 — tratamento de falha na janela de importação
+# Atualização 1.1.2 — conexão com o cartão em processo separado
 
-Esta versão trata a exceção Win32 registrada em `Dispatcher.GetMessage` ao executar a janela modal de importação. O erro anteriormente escapava do tratamento da consulta, encerrando o aplicativo. Agora solicita cancelamento, informa a falha e mantém os lotes já confirmados.
+Esta versão executa a conexão HTTPS e a autenticação com o cartão no auxiliar `NfseAdnWorker.exe`, separado das janelas WPF. O teste isolado com o A3 SafeNet solicitou o PIN e retornou 50 documentos em 7,1 segundos na máquina afetada. Essa evidência orientou a alteração; a importação integrada ainda precisa ser validada nessa máquina.
 
 Também registra as etapas de seleção do certificado, acesso ao banco e chamada HTTPS em `%LOCALAPPDATA%\NfseGerenciador\Logs\importacao-nacional.log`. Para localizar, pressione Win+R, cole `%LOCALAPPDATA%\NfseGerenciador\Logs` e pressione Enter.
 
-O registro recebido identifica a falha de janela, mas não prova sua origem no SafeNet. Esta é uma correção do encerramento sem tratamento e uma melhoria de diagnóstico; o funcionamento do PIN/A3 ainda precisa ser validado no computador do cartão. Não exige reinstalar o driver. Não há mudança de esquema do banco em relação à 1.1.0.
+O auxiliar permanece aberto entre os lotes e transmite os documentos em memória ao gerenciador. A gravação e o NSU continuam na mesma transação do banco. Parar ou falhar encerra o auxiliar; a próxima tentativa parte do último lote confirmado. O PIN continua sendo solicitado pelo driver e não é lido nem salvo pelo aplicativo. Cancelamento não é mais apresentado como possível tempo esgotado. Não há mudança de esquema do banco em relação à 1.1.0.
+
+Extraia e atualize o pacote completo: `NfseAdnWorker.exe` precisa ficar junto de `NfseGerenciador.exe`. O atualizador inclui ambos. Os executáveis ainda não possuem assinatura de editor; esta alteração não resolve o aviso de reputação do SmartScreen.
 
 Pacote para atualizar uma instalação Windows x64 existente. Não é instalador de SQL Server nem cria uma cópia dos dados em outra máquina.
 

@@ -20,6 +20,8 @@ jobs:
         run: dotnet run --project tests/AdnTests/AdnTests.csproj -c Release
       - name: Compilar e publicar
         run: dotnet publish NfseGerenciador.csproj -c Release -r win-x64 --self-contained true -o package/app -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+      - name: Publicar processo de conexão A3
+        run: dotnet publish tests/AdnWorker/AdnWorker.csproj -c Release -r win-x64 --self-contained true -o package/app -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
       - name: Montar atualização
         shell: pwsh
         run: |

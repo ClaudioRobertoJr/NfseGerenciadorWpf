@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using NfseGerenciador.Models;
 using NfseGerenciador.Services;
 using System.ComponentModel;
@@ -46,10 +46,10 @@ public partial class NacionalImportWindow : Window
             if (!_windowFailed) StatusText.Text = result;
             ImportDiagnostics.Write("Importação concluída");
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException ex)
         {
-            ImportDiagnostics.Write("Importação cancelada ou timeout");
-            if (!_windowFailed) StatusText.Text = "Importação interrompida ou tempo de consulta esgotado. Os lotes confirmados foram preservados; a próxima tentativa continuará dali.";
+            ImportDiagnostics.Write("Importação cancelada", ex);
+            if (!_windowFailed) StatusText.Text = "Importação cancelada. Os lotes confirmados foram preservados; a próxima tentativa continuará dali.";
         }
         catch (Exception ex)
         {

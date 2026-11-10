@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using NfseGerenciador.Models;
 using System.Net.Http;
 using System.Security.Cryptography.X509Certificates;
@@ -9,11 +9,8 @@ public sealed class NacionalImportService(IDbContextFactory<ApplicationDbContext
 {
     public async Task<string> ImportAsync(string cnpj, X509Certificate2 cert, IProgress<string> progress, CancellationToken ct)
     {
-        ImportDiagnostics.Write("Preparando cliente HTTPS e certificado");
-        using var handler = new HttpClientHandler { ClientCertificateOptions = ClientCertificateOption.Manual, AllowAutoRedirect = false };
-        handler.ClientCertificates.Add(cert);
-        using var http = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(120) };
-        var client = new AdnClient(http);
+        ImportDiagnostics.Write("Iniciando processo separado para HTTPS e cartão");
+        using var client = new AdnProcessClient(cert.Thumbprint);
         int imported = 0, read = 0, cancelled = 0;
         while (true)
         {
