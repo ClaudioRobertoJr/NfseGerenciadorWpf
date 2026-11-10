@@ -15,3 +15,11 @@ Notas fiscalmente canceladas não podem receber novas baixas. Cancelamento fisca
 
 ## Validação na máquina de uso
 Após backup do banco e atualização pelo Atualizar.cmd, confira o botão na tela de notas. Gere uma prévia com um relatório conhecido e confira nota, prestador, valor, forma e data antes de confirmar um pequeno lote. Verifique o resultado na lista, abra novamente o mesmo relatório e confira que os recebimentos pagos não reaparecem. Confirme também a abertura da importação nacional com o cartão A3 e a continuidade do NSU. Os testes automatizados não substituem essa validação com o relatório e o cartão reais.
+
+## Evidências automatizadas desta recuperação
+- 94 testes de baixas passaram no Windows do GitHub, sem testes ignorados, incluindo os 14 testes SQL em bancos descartáveis: migração a partir do esquema 1.1.3, preservação de notas/parcelas/pagamentos/NSU, histórico, repetição, concorrência, rollback e cancelamento após prévia.
+- 28 verificações da importação nacional passaram, incluindo comunicação com o worker e interrupção da espera pelo PIN. Não foi utilizado cartão A3 real nesses testes.
+- Janela de baixas carregada com os recursos atuais e seleção por checkbox testada em WPF; nenhuma alteração no banco ocorre ao gerar a prévia.
+- Atualizador exercitado em instalação simulada, preservando configuração e arquivo de banco, copiando gerenciador e worker e mantendo os binários anteriores.
+- Corrigida a comparação do estado financeiro para tratar 100 e 100,00 como equivalentes, sem ignorar alterações reais de valor.
+- Execução de referência: https://github.com/ClaudioRobertoJr/NfseGerenciadorWpf/actions/runs/42818178709
