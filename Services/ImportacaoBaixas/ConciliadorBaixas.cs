@@ -99,8 +99,8 @@ public sealed class ConciliadorBaixas
     internal static string Digitos(string value) => Regex.Replace(value ?? "",@"\D","");
     private static string NumeroNormal(string value) => (value ?? "").Trim().TrimStart('0');
     internal static string Estado(Nfse n) => Hash(JsonSerializer.Serialize(new {
-        n.Id,n.Numero,n.PrestadorCnpj,n.TomadorRazaoSocial,n.TomadorCpfCnpj,n.DataEmissao,n.ValorLiquidoNfse,n.EstaPago,n.Excluida,n.Cancelada,n.Local,n.PagamentoId,n.DataPagamentoEfetivo,n.DataPrevistaRecebimento,
-        Parcelas=n.Parcelas.OrderBy(p=>p.Id).Select(p=>new{p.Id,p.NumeroParcela,p.ValorParcela,p.DataVencimentoParcela,p.ParcelaPaga,p.DataPagamentoParcela}) }));
+        n.Id,n.Numero,n.PrestadorCnpj,n.TomadorRazaoSocial,n.TomadorCpfCnpj,n.DataEmissao,ValorLiquidoNfse=n.ValorLiquidoNfse.ToString("G29",CultureInfo.InvariantCulture),n.EstaPago,n.Excluida,n.Cancelada,n.Local,n.PagamentoId,n.DataPagamentoEfetivo,n.DataPrevistaRecebimento,
+        Parcelas=n.Parcelas.OrderBy(p=>p.Id).Select(p=>new{p.Id,p.NumeroParcela,ValorParcela=p.ValorParcela.ToString("G29",CultureInfo.InvariantCulture),p.DataVencimentoParcela,p.ParcelaPaga,p.DataPagamentoParcela}) }));
     private static string Impressao(LancamentoRelatorio r,string provider) => Hash(JsonSerializer.Serialize(new {
         provider,Centro=LeitorRelatorioBaixas.Normalizar(r.Centro),Conta=LeitorRelatorioBaixas.Normalizar(r.Conta),r.Empresa,
         Data=r.Data?.ToString("yyyy-MM-dd",CultureInfo.InvariantCulture),Lote=LeitorRelatorioBaixas.Normalizar(r.Lote),
