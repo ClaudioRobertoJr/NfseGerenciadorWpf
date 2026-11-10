@@ -29,6 +29,7 @@ namespace NfseGerenciador.ViewModels
         private bool _isCarregandoLista;
         private string _erroConsulta = "";
         public Task CarregamentoAtual { get; private set; } = Task.CompletedTask;
+        internal Task CarregamentoDetalhes { get; private set; } = Task.CompletedTask;
         public bool IsCarregandoLista { get => _isCarregandoLista; private set { _isCarregandoLista=value; OnPropertyChanged(nameof(IsCarregandoLista)); CommandManager.InvalidateRequerySuggested(); } }
         public string ErroConsulta { get => _erroConsulta; private set { _erroConsulta=value; OnPropertyChanged(nameof(ErroConsulta)); } }
         public string RotuloDataFiltro => FiltroStatus == "Pagas" ? "Pagamento de:" : "Emissão de:";
@@ -141,7 +142,7 @@ namespace NfseGerenciador.ViewModels
             {
                 _nfseSelecionada = value;
                 OnPropertyChanged(nameof(NfseSelecionada));
-                CarregarDetalhesPagamento();
+                CarregamentoDetalhes = CarregarDetalhesPagamento();
                 CommandManager.InvalidateRequerySuggested();
             }
         }
@@ -332,7 +333,7 @@ namespace NfseGerenciador.ViewModels
         private Task MudarPagina(int direcao)
             => AplicarFiltroCompleto(false, Math.Clamp(CurrentPage + direcao, 1, TotalPages));
 
-        private async void CarregarDetalhesPagamento()
+        private async Task CarregarDetalhesPagamento()
         {
             var nota = NfseSelecionada;
             IsDetalhesVisible = false;
@@ -343,6 +344,7 @@ namespace NfseGerenciador.ViewModels
                 var parcelas = await context.NfseParcelas.AsNoTracking().Where(p => p.NfseId == nota.Id).ToListAsync();
                 if (!ReferenceEquals(nota, NfseSelecionada)) return;
                 nota.Parcelas = parcelas;
+                OnPropertyChanged(nameof(NfseSelecionada));
                 DetalhesEstaPago = nota.EstaPago;
                 DetalhesLocalPagamento = nota.Local;
                 DetalhesDataPagamento = nota.DataPagamentoEfetivo ?? (nota.EstaPago ? DateTime.Today : (DateTime?)null);

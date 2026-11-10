@@ -141,7 +141,7 @@
                                 <DatePicker SelectedDate="{Binding FiltroDataInicial}" Style="{StaticResource ControleFiltroFormularioStyle}"/>
                                 <TextBlock Text="Até:" Style="{StaticResource LabelFiltroFormularioStyle}"/>
                                 <DatePicker SelectedDate="{Binding FiltroDataFinal}" Style="{StaticResource ControleFiltroFormularioStyle}"/>
-                                <TextBlock Text="Buscar (Tomador/Nº):" Style="{StaticResource LabelFiltroFormularioStyle}"/>
+                                <TextBlock Text="Buscar (Tomador/Nº/CPF/CNPJ):" Style="{StaticResource LabelFiltroFormularioStyle}"/>
                                 <TextBox Text="{Binding FiltroTexto, UpdateSourceTrigger=PropertyChanged}" Width="250" Style="{StaticResource ControleFiltroFormularioStyle}"/>
                             </WrapPanel>
                             <Button Grid.Column="1" Command="{Binding LimparFiltrosCommand}" Style="{StaticResource BotaoSecundarioStyle}">

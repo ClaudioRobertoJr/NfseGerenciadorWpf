@@ -33,9 +33,9 @@ internal sealed class ConsultaNotasService(IDbContextFactory<ApplicationDbContex
         {
             var texto = filtro.Texto.Trim().ToLowerInvariant();
             var documento = new string(texto.Where(char.IsDigit).ToArray());
-            bool buscaDocumento = documento.Length > 0 && texto.All(c => char.IsDigit(c) || c is '.' or '-' or '/' or ' ');
+            bool buscaDocumento = (documento.Length is 11 or 14) && texto.All(c => char.IsDigit(c) || c is '.' or '-' or '/' or ' ');
             query = query.Where(n => (n.TomadorRazaoSocial != null && n.TomadorRazaoSocial.ToLower().Contains(texto)) ||
-                n.Numero.Contains(texto) || (buscaDocumento && n.TomadorCpfCnpj != null && n.TomadorCpfCnpj.Replace(".", "").Replace("-", "").Replace("/", "").Replace(" ", "").Contains(documento)));
+                n.Numero.Contains(texto) || (buscaDocumento && n.TomadorCpfCnpj != null && n.TomadorCpfCnpj.Replace(".", "").Replace("-", "").Replace("/", "").Replace(" ", "") == documento));
         }
         int total = await query.CountAsync();
         int pagina = Math.Clamp(filtro.Pagina, 1, Math.Max(1, (int)Math.Ceiling((double)total / filtro.Tamanho)));

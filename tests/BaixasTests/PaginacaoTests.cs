@@ -58,6 +58,12 @@ public class PaginacaoTests
         var service=new ConsultaNotasService(f);var filtro=new FiltroConsultaNotas("Todas",null,null,null,null,1,50);var ids=new List<int>();
         for(int p=1;p<=4;p++){var r=await service.CarregarAsync(filtro with{Pagina=p});Assert.Equal(p,r.Pagina);Assert.Equal(160,r.Total);ids.AddRange(r.Notas.Select(n=>n.Id));}
         Assert.Equal(160,ids.Distinct().Count());
+        Assert.Equal("81",Assert.Single((await service.CarregarAsync(filtro with{Texto="81"})).Notas).Numero);
+        var vm=new GerenciadorNfseViewModel(f,new(new LogService()),new LogService(),service.CarregarAsync,Array.Empty<Pagamento>());
+        await vm.CarregamentoAtual;int notificacoes=0;
+        vm.PropertyChanged+=(_,e)=>{if(e.PropertyName==nameof(vm.NfseSelecionada))notificacoes++;};
+        vm.NfseSelecionada=vm.Nfses[0];await vm.CarregamentoDetalhes;
+        Assert.True(vm.IsDetalhesVisible);Assert.True(notificacoes>=2);
         var filtrado=await service.CarregarAsync(filtro with{Status="Pagas",Texto="123.456.789-01",Local="Particular",Inicio=new(2026,11,5),Fim=new(2026,11,5)});
         Assert.Equal(40,filtrado.Total);Assert.All(filtrado.Notas,n=>Assert.True(n.EstaPago));
         Assert.Equal(0,(await service.CarregarAsync(filtro with{Texto="inexistente"})).Total);
