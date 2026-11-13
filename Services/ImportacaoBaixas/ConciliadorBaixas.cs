@@ -8,6 +8,8 @@ using NfseGerenciador.Models.ImportacaoBaixas;
 namespace NfseGerenciador.Services.ImportacaoBaixas;
 public sealed class ConciliadorBaixas
 {
+    private const string ContrapartidaSicredi = "SICREDI_CARTAO_UNICO_PAGO_V1";
+    private const string PrefixoSicredi = "CARTAO SICREDI CONCILIADO V1 ";
     private static readonly Regex Referencia = new(@"\b(?:NOTA(?:\s+FISCAL)?|NFS[- ]?E|NF)\s*(?:N[º°O.]\s*)?[.:º°#-]*\s*(?<numero>\d+)\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1));
     public PreviaBaixas Conciliar(RelatorioBaixas relatorio, IReadOnlyList<Nfse> notas, IReadOnlyList<Pagamento> pagamentos, string prestadorCnpj, IReadOnlyDictionary<int,ConferenciaManual>? conferencias=null)
     {
@@ -29,9 +31,14 @@ public sealed class ConciliadorBaixas
                 Impressao=Impressao(row,provider), Conferencia=manual };
             ItemPrevia Review(string reason) => item with { Motivo=reason };
             var history = LeitorRelatorioBaixas.Normalizar(row.Historico);
+            // This marker is an import contract, not proof of settlement. The user must review it.
+            // Require both fields exactly; a manual mapping must never turn a generic card row into this flow.
+            bool cartaoSicredi = row.Contrapartida == ContrapartidaSicredi &&
+                row.Historico.StartsWith(PrefixoSicredi, StringComparison.Ordinal) &&
+                refs[row.Id] is not null && refs[row.Id] == number && !history.Contains("SIPAG");
             if (number.Length>0 && byNumber.TryGetValue(number,out var paidMatches) && paidMatches.Count==1 && paidMatches[0].EstaPago)
                 item=item with{Status=StatusConciliacao.Ignorada,JaBaixada=true,Motivo="Nota já paga."};
-            else if (history.Contains("SIPAG") || history.Contains("CARTAO"))
+            else if (!cartaoSicredi && (row.Contrapartida == ContrapartidaSicredi || history.Contains("SIPAG") || history.Contains("CARTAO")))
                 item = item with { Status=StatusConciliacao.Ignorada, Motivo="Cartão/SIPAG: baixa manual." };
             else if (row.Erro is not null) item=Review(row.Erro);
             else if (row.Data is null || row.Credito is null || row.Debito is null) item=Review("Data ou valor ausente.");
@@ -52,7 +59,7 @@ public sealed class ConciliadorBaixas
                 else if (!ParcelasCompativeis(note)) item=Review("Parcelamento ou pagamento anterior: conferir manualmente.");
                 else
                 {
-                    string type=row.Contrapartida switch { "4889" or "230" => "Pix", "132" or "108" => "Dinheiro", _ => "" };
+                    string type=cartaoSicredi ? "Cartao" : row.Contrapartida switch { "4889" or "230" => "Pix", "132" or "108" => "Dinheiro", _ => "" };
                     // Equivalent cash registrations can exist in legacy databases. Reuse one deterministically;
                     // never delete or reassign historical payment registrations.
                     var payment=pagamentos.Where(p=>LeitorRelatorioBaixas.Normalizar(p.TipoRecebimento)==LeitorRelatorioBaixas.Normalizar(type) && p.EhAVista && p.NumeroParcelas is null or 1).OrderBy(p=>p.Id).FirstOrDefault();
@@ -61,6 +68,7 @@ public sealed class ConciliadorBaixas
                     else
                     {
                         var warnings=new List<string>();
+                        if(manual is null && cartaoSicredi)warnings.Add("Cartão Sicredi conciliado por documento externo: confirme a venda, a nota, o valor integral e a data efetiva do pagamento");
                         if(manual is null && row.Data.Value.Date<note.DataEmissao.Date)warnings.Add("Recebimento anterior à emissão");
                         if(manual is null && NomeDivergente(row.Historico,note.TomadorRazaoSocial))warnings.Add("Nome no histórico difere do tomador");
                         item=item with { Status=warnings.Count>0 ? StatusConciliacao.Revisao : StatusConciliacao.Apta,
@@ -107,3 +115,5 @@ public sealed class ConciliadorBaixas
         r.Contrapartida,Historico=LeitorRelatorioBaixas.Normalizar(r.Historico),Debito=r.Debito?.ToString("0.00",CultureInfo.InvariantCulture),Credito=r.Credito?.ToString("0.00",CultureInfo.InvariantCulture) }));
     private static string Hash(string text) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(text)));
 }
+
+
