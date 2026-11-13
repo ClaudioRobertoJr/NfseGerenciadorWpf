@@ -1,3 +1,11 @@
+# Novidades da versão 1.1.6
+
+Importação de relatório conciliado Sicredi para cartão em uma única parcela integralmente paga. Os lançamentos entram em **Conferir**, desmarcados, e exigem seleção explícita. Reutiliza o cadastro existente de Cartão à vista; não cria forma de pagamento e não altera o esquema do banco.
+
+O relatório precisa trazer a contrapartida `SICREDI_CARTAO_UNICO_PAGO_V1` e histórico iniciado por `CARTAO SICREDI CONCILIADO V1 `, com referência única à NF. A data deve ser a do pagamento efetivo, e o crédito o valor bruto integral, igual ao valor da nota. O marcador não comprova o recebimento: confira nota, venda e comprovante. Cartões genéricos, vendas parceladas e pagamentos parciais continuam fora deste fluxo. Permanecem as verificações de duplicidade, nota cancelada, baixa anterior e parcelas existentes.
+
+Para atualizar outro computador que já usa o gerenciador, siga os passos de atualização abaixo **nesse computador**. O ZIP de atualização é gerado pelo workflow Compilar e publicar Windows, no artefato `NfseGerenciador-win-x64`. O download do artefato contém outro ZIP de mesmo nome: extraia também esse ZIP até encontrar `Atualizar.cmd` e a pasta `app`. Preserve o `appsettings.json` da instalação de destino. Esta atualização não transfere dados entre computadores.
+
 # Novidades da versão 1.1.5
 
 Correções de paginação/filtros, comandos na interface, importação XML, seleção de pagamento, relatórios, dashboard, cadastro e seleção de conjunto de backup. Sem nova migração. Consulte [revisão e validação](REVISAO-1.1.5.md).
