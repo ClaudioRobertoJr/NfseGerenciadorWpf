@@ -1,3 +1,15 @@
+# Novidades da versão 1.1.7
+
+Importação em lote de notas já confirmadas pelo usuário, com **Cartão de Crédito**, **Cartão de Débito**, data da baixa, setor e quantidade de parcelas. O relatório confirmado entra em **Aptas** quando as validações passam. Use **Selecionar aptas** e **Confirmar baixas selecionadas** para gravar. Não é necessário cadastrar outro tipo de pagamento.
+
+O formato utiliza as nove colunas do relatório de baixas existente. A contrapartida é `CONFIRMADO_CRED_6_V1` para crédito em seis parcelas, por exemplo, ou `CONFIRMADO_DEB_1_V1` para débito. O histórico começa com `BAIXA CONFIRMADA PELO USUARIO V1 NF ` seguido do número único da nota. O crédito deve ser o valor integral da nota, e débito deve ser zero. Esse marcador representa uma confirmação externa do usuário, não uma identificação automática de pagamento bancário.
+
+As parcelas seguem a regra da baixa manual: a nota e suas parcelas ficam pagas na data informada, com vencimentos mensais a partir dessa data e diferença de centavos na última parcela. Não use esse formato para parcelas ainda não pagas ou correspondências apenas prováveis. O fluxo anterior de conciliação Sicredi continua exigindo revisão.
+
+O sistema reutiliza os cadastros existentes de Cartão de Crédito/Débito e não cria novos tipos. Notas canceladas, excluídas, já pagas, com valor divergente ou histórico de pagamento/parcelamento incompatível continuam bloqueadas. Somente a parcela padrão pendente criada na importação XML pode ser substituída. A confirmação é auditada e revalidada na mesma transação. Sem alteração de esquema do banco.
+
+Atualize a instalação existente com o ZIP desta versão e `Atualizar.cmd`, seguindo as instruções abaixo. O relatório particular do usuário não está incluído no repositório nem no pacote público.
+
 # Novidades da versão 1.1.6
 
 Importação de relatório conciliado Sicredi para cartão em uma única parcela integralmente paga. Os lançamentos entram em **Conferir**, desmarcados, e exigem seleção explícita. Reutiliza o cadastro existente de Cartão à vista; não cria forma de pagamento e não altera o esquema do banco.
@@ -49,3 +61,4 @@ A API não oferece filtro por data e exige o certificado durante as consultas. C
 O pacote passa por compilação e testes com documentos sintéticos. O acesso por procuração foi validado com o certificado do usuário pelo navegador; a execução do novo aplicativo com o A3 e o banco real precisa ser conferida no computador de destino. Nenhum certificado, PIN, XML real ou banco integra este pacote.
 
 Se a atualização falhar, mantenha o aplicativo fechado e recupere os binários do diretório `backup-versao-*`. A migração é aditiva; não reverta o banco sem avaliar alterações posteriores à atualização. O instalador antigo da pasta Instalador não contém esta versão.
+

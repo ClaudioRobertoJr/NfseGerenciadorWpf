@@ -31,6 +31,8 @@ public sealed class ConciliadorBaixas
                 Impressao=Impressao(row,provider), Conferencia=manual };
             ItemPrevia Review(string reason) => item with { Motivo=reason };
             var history = LeitorRelatorioBaixas.Normalizar(row.Historico);
+            var confirmed=BaixaConfirmada.Ler(row);
+            bool confirmedValid=confirmed is not null && refs[row.Id] is not null && refs[row.Id]==number;
             // This marker is an import contract, not proof of settlement. The user must review it.
             // Require both fields exactly; a manual mapping must never turn a generic card row into this flow.
             bool cartaoSicredi = row.Contrapartida == ContrapartidaSicredi &&
@@ -38,7 +40,9 @@ public sealed class ConciliadorBaixas
                 refs[row.Id] is not null && refs[row.Id] == number && !history.Contains("SIPAG");
             if (number.Length>0 && byNumber.TryGetValue(number,out var paidMatches) && paidMatches.Count==1 && paidMatches[0].EstaPago)
                 item=item with{Status=StatusConciliacao.Ignorada,JaBaixada=true,Motivo="Nota já paga."};
-            else if (!cartaoSicredi && (row.Contrapartida == ContrapartidaSicredi || history.Contains("SIPAG") || history.Contains("CARTAO")))
+            else if (BaixaConfirmada.TemMarcador(row) && !confirmedValid)
+                item=Review("Contrato de baixa confirmada inválido: confira tipo, parcelas e referência única à nota.");
+            else if (!cartaoSicredi && !confirmedValid && (row.Contrapartida == ContrapartidaSicredi || history.Contains("SIPAG") || history.Contains("CARTAO")))
                 item = item with { Status=StatusConciliacao.Ignorada, Motivo="Cartão/SIPAG: baixa manual." };
             else if (row.Erro is not null) item=Review(row.Erro);
             else if (row.Data is null || row.Credito is null || row.Debito is null) item=Review("Data ou valor ausente.");
@@ -56,25 +60,27 @@ public sealed class ConciliadorBaixas
                 else if (note.Excluida) item=Review("Nota excluída: não será baixada.");
                 else if (note.EstaPago) item=item with { Status=StatusConciliacao.Ignorada, JaBaixada=true, Motivo="Nota já paga." };
                 else if (note.ValorLiquidoNfse != row.Credito) item=Review("Crédito diferente do valor líquido da nota.");
-                else if (!ParcelasCompativeis(note)) item=Review("Parcelamento ou pagamento anterior: conferir manualmente.");
+                else if (confirmedValid ? !BaixaConfirmada.SemHistoricoAnterior(note) : !ParcelasCompativeis(note)) item=Review("Parcelamento ou pagamento anterior: conferir manualmente.");
+                else if (confirmedValid && !confirmed!.ValoresEDatasValidos(note.ValorLiquidoNfse,row.Data.Value)) item=Review("Valor ou data incompatível com a quantidade de parcelas confirmada.");
                 else
                 {
-                    string type=cartaoSicredi ? "Cartao" : row.Contrapartida switch { "4889" or "230" => "Pix", "132" or "108" => "Dinheiro", _ => "" };
+                    string type=confirmedValid ? confirmed!.TipoPagamento : cartaoSicredi ? "Cartao" : row.Contrapartida switch { "4889" or "230" => "Pix", "132" or "108" => "Dinheiro", _ => "" };
                     // Equivalent cash registrations can exist in legacy databases. Reuse one deterministically;
                     // never delete or reassign historical payment registrations.
-                    var payment=pagamentos.Where(p=>LeitorRelatorioBaixas.Normalizar(p.TipoRecebimento)==LeitorRelatorioBaixas.Normalizar(type) && p.EhAVista && p.NumeroParcelas is null or 1).OrderBy(p=>p.Id).FirstOrDefault();
+                    var payment=pagamentos.Where(p=>confirmedValid ? confirmed!.Aceita(p) : LeitorRelatorioBaixas.Normalizar(p.TipoRecebimento)==LeitorRelatorioBaixas.Normalizar(type) && p.EhAVista && p.NumeroParcelas is null or 1).OrderBy(p=>p.Id).FirstOrDefault();
                     if(type.Length==0) item=Review("Contrapartida sem regra de pagamento.");
-                    else if(payment is null) item=Review("Forma de pagamento à vista não cadastrada: "+type+" (à vista, uma parcela).");
+                    else if(payment is null) item=Review(confirmedValid ? "Forma de pagamento confirmada não cadastrada ou incompatível: "+type+" ("+confirmed!.Parcelas+" parcela(s))." : "Forma de pagamento à vista não cadastrada: "+type+" (à vista, uma parcela).");
                     else
                     {
                         var warnings=new List<string>();
                         if(manual is null && cartaoSicredi)warnings.Add("Cartão Sicredi conciliado por documento externo: confirme a venda, a nota, o valor integral e a data efetiva do pagamento");
-                        if(manual is null && row.Data.Value.Date<note.DataEmissao.Date)warnings.Add("Recebimento anterior à emissão");
-                        if(manual is null && NomeDivergente(row.Historico,note.TomadorRazaoSocial))warnings.Add("Nome no histórico difere do tomador");
+                        if(manual is null && !confirmedValid && row.Data.Value.Date<note.DataEmissao.Date)warnings.Add("Recebimento anterior à emissão");
+                        if(manual is null && !confirmedValid && NomeDivergente(row.Historico,note.TomadorRazaoSocial))warnings.Add("Nome no histórico difere do tomador");
                         item=item with { Status=warnings.Count>0 ? StatusConciliacao.Revisao : StatusConciliacao.Apta,
                             PermiteBaixaEmLote=warnings.Count>0,
-                            Motivo=warnings.Count>0 ? string.Join("; ",warnings)+". Se reconhecer o recebimento, marque Baixar." : manual is null ? "Nota e valor conferidos." : "Conferida manualmente: "+manual.Justificativa,
-                            TipoPagamento=type,PagamentoId=payment.Id };
+                            Motivo=warnings.Count>0 ? string.Join("; ",warnings)+". Se reconhecer o recebimento, marque Baixar." : confirmedValid ? "Confirmada pelo usuário: "+type+", "+confirmed!.Parcelas+" parcela(s) pagas." : manual is null ? "Nota e valor conferidos." : "Conferida manualmente: "+manual.Justificativa,
+                            TipoPagamento=confirmedValid ? type+" ("+confirmed!.Parcelas+"x)" : type,
+                            PagamentoId=payment.Id,NumeroParcelasConfirmadas=confirmedValid ? confirmed!.Parcelas : null };
                     }
                 }
             }
@@ -115,5 +121,6 @@ public sealed class ConciliadorBaixas
         r.Contrapartida,Historico=LeitorRelatorioBaixas.Normalizar(r.Historico),Debito=r.Debito?.ToString("0.00",CultureInfo.InvariantCulture),Credito=r.Credito?.ToString("0.00",CultureInfo.InvariantCulture) }));
     private static string Hash(string text) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(text)));
 }
+
 
 

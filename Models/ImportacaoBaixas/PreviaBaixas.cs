@@ -12,6 +12,7 @@ public sealed record ItemPrevia
     public string Motivo { get; init; } = "";
     public string TipoPagamento { get; init; } = "";
     public int? PagamentoId { get; init; }
+    public int? NumeroParcelasConfirmadas { get; init; }
     public LocalPagamento Local { get; init; }
     public string EstadoOriginal { get; init; } = "";
     public string Impressao { get; init; } = "";
@@ -25,3 +26,4 @@ public sealed record PreviaBaixas(RelatorioBaixas Relatorio, string PrestadorCnp
     public string NomeArquivo { get; init; } = "";
 }
 public sealed record ResultadoImportacao(int LoteId, int Quantidade, decimal Valor);
+
