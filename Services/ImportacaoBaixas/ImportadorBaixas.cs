@@ -54,7 +54,7 @@ public sealed class ImportadorBaixas(IDbContextFactory<ApplicationDbContext> fac
             var current=fresh.Itens.SingleOrDefault(i=>i.Origem.Id==old.Origem.Id);
             if(current is null || !current.PodeBaixar || current.NfseId!=old.NfseId ||
                 current.EstadoOriginal!=old.EstadoOriginal || current.Impressao!=old.Impressao ||
-                current.PagamentoId!=old.PagamentoId || current.Local!=old.Local)
+                current.PagamentoId!=old.PagamentoId || current.Local!=old.Local || current.NumeroParcelasConfirmadas!=old.NumeroParcelasConfirmadas || current.Origem!=old.Origem)
                 throw new InvalidOperationException("A nota ou o cadastro mudou desde a prévia. Gere outra prévia; nenhuma baixa foi gravada.");
         }
         var lot=new LoteBaixa { HashArquivo=previa.Relatorio.HashArquivo,NomeArquivo=previa.NomeArquivo,
@@ -66,14 +66,28 @@ public sealed class ImportadorBaixas(IDbContextFactory<ApplicationDbContext> fac
             string before=Auditoria(note);
             var date=item.Origem.Data!.Value.Date;
             note.EstaPago=true;note.Local=item.Local;note.PagamentoId=item.PagamentoId;note.DataPagamentoEfetivo=date;
-            if(note.Parcelas.Count==0) note.Parcelas.Add(new NfseParcela { NumeroParcela=1,ValorParcela=note.ValorLiquidoNfse,DataVencimentoParcela=date });
-            var parcel=note.Parcelas.Single();
-            parcel.ParcelaPaga=true;parcel.DataPagamentoParcela=date;
-            note.DataPrevistaRecebimento=parcel.DataVencimentoParcela;
+            if(item.NumeroParcelasConfirmadas is int count)
+            {
+                // Revalidation permits only an untouched XML default, never an existing payment history.
+                db.NfseParcelas.RemoveRange(note.Parcelas);
+                note.Parcelas.Clear();
+                decimal part=Math.Round(note.ValorLiquidoNfse/count,2);
+                for(int i=1;i<=count;i++)
+                    note.Parcelas.Add(new NfseParcela { NumeroParcela=i,ValorParcela=i==count ? note.ValorLiquidoNfse-part*(count-1) : part,
+                        DataVencimentoParcela=date.AddMonths(i-1),DataPagamentoParcela=date,ParcelaPaga=true });
+                note.DataPrevistaRecebimento=date.AddMonths(count-1);
+            }
+            else
+            {
+                if(note.Parcelas.Count==0) note.Parcelas.Add(new NfseParcela { NumeroParcela=1,ValorParcela=note.ValorLiquidoNfse,DataVencimentoParcela=date });
+                var parcel=note.Parcelas.Single();
+                parcel.ParcelaPaga=true;parcel.DataPagamentoParcela=date;
+                note.DataPrevistaRecebimento=parcel.DataVencimentoParcela;
+            }
             db.RegistrosBaixas.Add(new RegistroBaixa { Lote=lot,Nota=note,Impressao=item.Impressao,
                 Planilha=item.Origem.Planilha,Linha=item.Origem.Linha,Historico=item.Origem.Historico,Centro=item.Origem.Centro,
                 Contrapartida=item.Origem.Contrapartida,DataRelatorio=date,Valor=item.Origem.Credito.Value,
-                EstadoAnterior=before,EstadoPosterior=Auditoria(note,item.Conferencia ?? (item.Status==StatusConciliacao.Revisao ? new ConferenciaManual(note.Id,"Selecionada pelo usuário na aba Conferir: "+item.Motivo) : null)) });
+                EstadoAnterior=before,EstadoPosterior=Auditoria(note,item.Conferencia ?? (item.NumeroParcelasConfirmadas is not null ? new ConferenciaManual(note.Id,item.Motivo) : item.Status==StatusConciliacao.Revisao ? new ConferenciaManual(note.Id,"Selecionada pelo usuário na aba Conferir: "+item.Motivo) : null)) });
         }
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
@@ -89,3 +103,4 @@ public sealed class ImportadorBaixas(IDbContextFactory<ApplicationDbContext> fac
         n.Id,n.Numero,n.PrestadorCnpj,n.EstaPago,n.Local,n.PagamentoId,n.DataPagamentoEfetivo,n.DataPrevistaRecebimento,
         Parcelas=n.Parcelas.Select(p=>new{p.Id,p.NumeroParcela,p.ValorParcela,p.DataVencimentoParcela,p.ParcelaPaga,p.DataPagamentoParcela}) });
 }
+

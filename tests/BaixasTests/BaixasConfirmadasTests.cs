@@ -45,6 +45,30 @@ public class BaixasConfirmadasTests
         n.EstaPago=false;n.DataPagamentoEfetivo=new(2026,1,1);Assert.False(Match(note:n).PodeBaixar);
     }
 
+    [Fact] public void Custom_pending_schedule_is_not_overwritten()
+    {
+        var n=ConciliadorBaixasTests.Nota();n.Parcelas.Add(new(){NumeroParcela=1,ValorParcela=100,DataVencimentoParcela=n.DataEmissao.AddDays(45)});
+        Assert.False(Match(note:n).PodeBaixar);
+    }
+    [Fact] public void Confirmed_count_and_payment_fingerprint_are_bound_to_preview()
+    {
+        var six=Match();var three=Match(Row("CONFIRMADO_CRED_3_V1"));
+        Assert.Equal(6,six.NumeroParcelasConfirmadas);Assert.Equal(3,three.NumeroParcelasConfirmadas);Assert.NotEqual(six.Impressao,three.Impressao);
+        Assert.Equal("Cartão de Crédito (6x)",six.TipoPagamento);
+        Assert.Equal("Cartão de Débito (1x)",Match(Row("CONFIRMADO_DEB_1_V1")).TipoPagamento);
+    }
+    [Fact] public void Invalid_rounding_or_overflowing_dates_are_blocked()
+    {
+        var n=ConciliadorBaixasTests.Nota();n.ValorLiquidoNfse=0.01m;
+        Assert.False(Match(Row() with{Credito=0.01m},n).PodeBaixar);
+        Assert.False(Match(Row() with{Data=DateTime.MaxValue.Date}).PodeBaixar);
+    }
+    [Fact] public void Duplicate_note_numbers_and_wrong_provider_are_blocked()
+    {
+        var n=ConciliadorBaixasTests.Nota();n.Id=2;
+        var p=new ConciliadorBaixas().Conciliar(new("T",[Row()],[]),[ConciliadorBaixasTests.Nota(),n],Payments(),ConciliadorBaixasTests.Cnpj);
+        Assert.False(Assert.Single(p.Itens).PodeBaixar);n.PrestadorCnpj="99999999000199";Assert.False(Match(note:n).PodeBaixar);
+    }
     [Fact] public void Duplicate_rows_or_manual_redirection_are_blocked()
     {
         var p=new ConciliadorBaixas().Conciliar(new("T",[Row(),Row() with{Id=2}],[]),[ConciliadorBaixasTests.Nota()],Payments(),ConciliadorBaixasTests.Cnpj);Assert.All(p.Itens,i=>Assert.False(i.PodeBaixar));
