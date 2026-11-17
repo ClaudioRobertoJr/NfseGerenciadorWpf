@@ -33,9 +33,11 @@
         <Grid IsEnabled="{Binding IsBusy, Converter={StaticResource InvertedBooleanConverter}}">
 
             <DockPanel>
-                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,10">
+                <WrapPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,10">
                     <Button Content="Importar baixas" Click="ImportarBaixas" Style="{StaticResource BotaoPrimarioStyle}"/>
                     <Button Content="Importar NFS-e Nacional" Click="ImportarNacional_Click" Style="{StaticResource BotaoPrimarioStyle}"/>
+                    <Button Content="Baixar empresas classificadas" Command="{Binding BaixarEmpresasClassificadasCommand}" Style="{StaticResource BotaoSecundarioStyle}"
+                            ToolTip="Aplica a regra Plano de Saúde/Convênio às pendentes de todo o banco, com pagamento na emissão e setor preservado."/>
                     <Button Command="{Binding ImportarXmlCommand}" Style="{StaticResource BotaoPrimarioStyle}">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="&#xE8C6;" Style="{StaticResource IconeEmBotaoStyle}"/>
@@ -54,7 +56,7 @@
                             <TextBlock Text="Excluir Nota" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
-                </StackPanel>
+                </WrapPanel>
 
                 <DockPanel DockPanel.Dock="Bottom">
                     <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,5,0,0">

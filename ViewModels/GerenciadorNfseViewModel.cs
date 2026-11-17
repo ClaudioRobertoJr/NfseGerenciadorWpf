@@ -57,6 +57,7 @@ namespace NfseGerenciador.ViewModels
         public ICommand ExcluirNotaCommand { get; }
         public ICommand LimparFiltrosCommand { get; }
         public ICommand SalvarPagamentoCommand { get; }
+        public ICommand BaixarEmpresasClassificadasCommand { get; }
         public ICommand PaginaAnteriorCommand { get; }
         public ICommand ProximaPaginaCommand { get; }
 
@@ -85,6 +86,11 @@ namespace NfseGerenciador.ViewModels
             ExcluirNotaCommand = new RelayCommand(ExcluirNotaAsync, () => NfseSelecionada != null);
             LimparFiltrosCommand = new RelayCommand(LimparFiltros);
             SalvarPagamentoCommand = new RelayCommand(SalvarPagamentoAsync, () => NfseSelecionada != null && PodeSalvarPagamento());
+            BaixarEmpresasClassificadasCommand = new RelayCommand(() => BaixarEmpresasAsync(
+                () => MessageBox.Show("Baixar todas as notas pendentes elegíveis de empresas cadastradas como Plano de Saúde ou Convênio, em todo o banco, independentemente dos filtros da lista?\n\nA data do pagamento será a data de emissão de cada nota e o setor será preservado. Esta ação aplica sua regra administrativa; não verifica recebimentos bancários. Históricos de pagamentos e condições personalizadas serão preservados.\n\nVocê pode usar este botão novamente após novas importações.",
+                    "Baixar empresas classificadas", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No) == MessageBoxResult.Yes,
+                () => new BaixaEmpresasClassificadasService(_contextFactory).BaixarAsync(),
+                message => MessageBox.Show(message, "Baixa de empresas classificadas")), () => !IsBusy && !IsCarregandoLista);
             PaginaAnteriorCommand = new RelayCommand(async () => await MudarPagina(-1), () => !IsCarregandoLista && CurrentPage > 1);
             ProximaPaginaCommand = new RelayCommand(async () => await MudarPagina(1), () => !IsCarregandoLista && CurrentPage < TotalPages);
 
@@ -159,6 +165,27 @@ namespace NfseGerenciador.ViewModels
         #endregion
 
         #region Comandos
+        internal async Task BaixarEmpresasAsync(Func<bool> confirmar, Func<Task<ResultadoBaixaEmpresas>> baixar, Action<string> informar)
+        {
+            if (IsBusy || IsCarregandoLista || !confirmar()) return;
+            IsBusy = true;
+            CommandManager.InvalidateRequerySuggested();
+            try
+            {
+                var result = await baixar();
+                await AplicarFiltroCompleto(true);
+                string skipped = result.Ignoradas.Count == 0 ? "" : "\nNão baixadas: " + string.Join("; ", result.Ignoradas.OrderBy(x => x.Key).Select(x => $"{x.Key}: {x.Value}"));
+                informar($"{result.Quantidade} nota(s) baixada(s), total {result.Valor:C2}. Data do pagamento: emissão de cada nota. Setor preservado." + skipped +
+                    (string.IsNullOrEmpty(ErroConsulta) ? "" : "\nA baixa terminou, mas a lista não foi atualizada. Clique em Atualizar."));
+            }
+            catch (Exception ex)
+            {
+                _logService.LogError(ex, "Baixar empresas classificadas");
+                informar("Não foi possível concluir a operação. Atualize a lista antes de tentar novamente. Consulte o log para detalhes.");
+            }
+            finally { IsBusy = false; CommandManager.InvalidateRequerySuggested(); }
+        }
+
         private async Task ImportarXmlAsync()
         {
             var openFileDialog = new OpenFileDialog { Multiselect = true, Filter = "Arquivos XML (*.xml)|*.xml", Title = "Selecionar Arquivos NFS-e" };

@@ -31,4 +31,3 @@ public class BaixaEmpresasClassificadasTests
     [Fact] public void Equivalent_payment_duplicates_choose_lowest_id_without_mutation()
     {var p=Pagamentos().Concat([new Pagamento{Id=2,TipoRecebimento="PLANO DE SAUDE",EhAVista=true}]).ToArray();Assert.Equal(2,Plan(payments:p).PagamentoId);Assert.Equal(3,p.Length);}
 }
-

@@ -47,5 +47,11 @@ public class BaixaEmpresasClassificadasSqlTests
         await using(var db=f.CreateDbContext()){var n=BaixaEmpresasClassificadasTests.Nota();n.Id=0;n.Numero="8002";db.Nfses.Add(n);await db.SaveChangesAsync();}
         Assert.Equal(1,(await service.BaixarAsync()).Quantidade);
     }
+    [SqlServerFact] public async Task Unrelated_notes_do_not_inflate_skipped_summary()
+    {
+        await using var f=new SqlServerFixture();await Setup(f);
+        await using(var db=f.CreateDbContext()){var n=BaixaEmpresasClassificadasTests.Nota();n.Id=0;n.Numero="8003";n.TomadorCpfCnpj="12345678901";db.Nfses.Add(n);await db.SaveChangesAsync();}
+        var result=await new BaixaEmpresasClassificadasService(f).BaixarAsync();Assert.Equal(2,result.Quantidade);Assert.Empty(result.Ignoradas);
+        await using var check=f.CreateDbContext();Assert.False((await check.Nfses.SingleAsync(n=>n.Numero=="8003")).EstaPago);
+    }
 }
-

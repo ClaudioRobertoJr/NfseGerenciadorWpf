@@ -1,3 +1,14 @@
+# Baixa de empresas classificadas — 1.1.8
+
+1. Cadastre o CNPJ do tomador em **Empresas Classificadas**, como **Plano de Saúde** ou **Convênio**.
+2. Na tela de notas, clique em **Baixar empresas classificadas**.
+3. Confirme o processamento de todas as pendentes elegíveis do banco. Os filtros da lista não limitam essa operação.
+4. Consulte o resumo. A lista será atualizada com as baixas realizadas.
+
+O pagamento usa o tipo da classificação, o dia de emissão da nota e uma parcela paga pelo valor integral. O setor permanece como estava. Não é necessário Excel nem escolher cada nota. Repita o botão após novas importações ou alterações de cadastro.
+
+Notas já pagas, canceladas, excluídas ou com histórico financeiro anterior não são sobrescritas. Cadastros ambíguos e pagamentos ausentes são informados. A função não comprova recebimento bancário: aplica a regra de baixa definida pelo usuário. O histórico identifica as notas processadas e impede repetir a mesma baixa.
+
 # Recuperação da importação de baixas — 1.1.4
 
 ## Diagnóstico
