@@ -1,3 +1,15 @@
+# Novidades da versão 1.1.8
+
+Novo botão **Baixar empresas classificadas** na tela de notas. Ele pode ser usado a qualquer momento para baixar notas pendentes atuais ou recém-importadas, sem relatório Excel.
+
+A vinculação usa o CNPJ do **tomador** e o cadastro em **Empresas Classificadas**. Plano de Saúde usa o pagamento Plano de Saúde; Convênio usa Convênio. A data da baixa é o dia da emissão, e o setor da nota é preservado. A regra registra a nota como paga conforme a classificação; não verifica recebimento bancário.
+
+Clique no botão e confirme para processar todas as pendentes elegíveis do banco, independentemente dos filtros da lista. O resultado informa quantidade, valor e impedimentos. Depois de importar novas notas ou atualizar o cadastro de empresas, use o botão novamente. Abrir o sistema ou importar notas, por si só, não executa essa baixa.
+
+Não altera notas já pagas, canceladas ou excluídas, nem sobrescreve pagamentos/parcelamentos anteriores. Reutiliza os tipos de pagamento existentes e não cria cadastros. CNPJ ambíguo, tipo de pagamento ausente e estado financeiro incompatível são tratados como impedimentos. A operação mantém histórico e grava em transação. Sem nova migração do banco.
+
+Atualize com o ZIP desta versão e `Atualizar.cmd`. Faça backup do banco antes de atualizar.
+
 # Novidades da versão 1.1.7
 
 Importação em lote de notas já confirmadas pelo usuário, com **Cartão de Crédito**, **Cartão de Débito**, data da baixa, setor e quantidade de parcelas. O relatório confirmado entra em **Aptas** quando as validações passam. Use **Selecionar aptas** e **Confirmar baixas selecionadas** para gravar. Não é necessário cadastrar outro tipo de pagamento.
