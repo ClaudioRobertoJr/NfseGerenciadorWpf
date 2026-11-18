@@ -34,6 +34,10 @@
 
             <DockPanel>
                 <WrapPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,10">
+                    <Button Content="Ver avaliação" Click="VerAvaliacao_Click" Style="{StaticResource BotaoSecundarioStyle}"
+                            ToolTip="Mostra os campos do padrão nacional da nota selecionada, sem alterar pagamentos."/>
+                    <Button Content="Reavaliar padrão nacional" Click="ReavaliarNacional_Click" Style="{StaticResource BotaoSecundarioStyle}"
+                            ToolTip="Reavalia documentos já armazenados do prestador 72.547.623/0001-90, independentemente dos filtros; não consulta a API."/>
                     <Button Content="Importar baixas" Click="ImportarBaixas" Style="{StaticResource BotaoPrimarioStyle}"/>
                     <Button Content="Importar NFS-e Nacional" Click="ImportarNacional_Click" Style="{StaticResource BotaoPrimarioStyle}"/>
                     <Button Content="Baixar empresas classificadas" Command="{Binding BaixarEmpresasClassificadasCommand}" Style="{StaticResource BotaoSecundarioStyle}"
@@ -132,6 +136,9 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <WrapPanel>
+                                <TextBlock Text="Padrão nacional:" Style="{StaticResource LabelFiltroFormularioStyle}"/>
+                                <ComboBox ItemsSource="{Binding OpcoesPadraoNacional}" SelectedItem="{Binding FiltroPadraoNacional}"
+                                          MinWidth="135" Style="{StaticResource ControleFiltroFormularioStyle}"/>
                                 <TextBlock Text="Status:" Style="{StaticResource LabelFiltroFormularioStyle}"/>
 
                                 <ComboBox ItemsSource="{Binding OpcoesStatusFiltro}" 
@@ -161,6 +168,7 @@
                 <DataGrid ItemsSource="{Binding Nfses}" SelectedItem="{Binding NfseSelecionada}" AutoGenerateColumns="False" IsReadOnly="True" AlternatingRowBackground="#FFF7F7F7">
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="Número" Binding="{Binding Numero}" Width="Auto"/>
+                        <DataGridTextColumn Header="Padrão nacional" Binding="{Binding PadraoNacionalTexto}" Width="Auto"/>
                         <DataGridCheckBoxColumn Header="Cancelada" Binding="{Binding Cancelada}" Width="Auto"/>
                         <DataGridTextColumn Header="Emissão" Binding="{Binding DataEmissao, StringFormat='dd/MM/yyyy'}" SortDirection="Descending" Width="Auto"/>
                         <DataGridTextColumn Header="Valor" Binding="{Binding ValorLiquidoNfse, StringFormat=C, ConverterCulture='pt-BR'}" Width="Auto" MinWidth="110"/>

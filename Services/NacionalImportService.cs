@@ -3,17 +3,25 @@ using NfseGerenciador.Models;
 
 namespace NfseGerenciador.Services;
 
-public sealed class NacionalImportService(IDbContextFactory<ApplicationDbContext> factory)
+public sealed class NacionalImportService
 {
+    private readonly IDbContextFactory<ApplicationDbContext> factory;
+    private readonly Func<AdnProcessClient> criarCliente;
+    public NacionalImportService(IDbContextFactory<ApplicationDbContext> factory) : this(factory, () => new AdnProcessClient()) { }
+    // Test seam uses the same IPC client with a synthetic worker; production still starts the existing A3 helper.
+    internal NacionalImportService(IDbContextFactory<ApplicationDbContext> factory, Func<AdnProcessClient> criarCliente)
+    { this.factory = factory; this.criarCliente = criarCliente; }
+
     public async Task<string> ImportAsync(string cnpj, IProgress<string> progress, CancellationToken ct)
     {
         ImportDiagnostics.Write("Iniciando processo separado para HTTPS e cartão");
-        using var client = new AdnProcessClient();
+        using var client = criarCliente();
         progress.Report("Selecione o certificado na janela do auxiliar de conexão.");
         ImportDiagnostics.Write("Solicitando seleção de certificado no processo auxiliar");
         await client.SelectAsync(ct);
         ImportDiagnostics.Write("Seleção confirmada pelo auxiliar; iniciando sincronização");
         int imported = 0, read = 0, cancelled = 0;
+        var avaliacoes = new int[4];
         while (true)
         {
             ct.ThrowIfCancellationRequested();
@@ -32,9 +40,11 @@ public sealed class NacionalImportService(IDbContextFactory<ApplicationDbContext
             if (documents.Count == 0)
             {
                 await tx.RollbackAsync(ct);
-                return $"Sincronização concluída. {read} documentos examinados; {imported} notas emitidas desde 01/11/2026 importadas; {cancelled} cancelamentos aplicados. Último NSU: {state.UltimoNsu}.";
+                return $"Sincronização concluída. {read} documentos examinados; {imported} notas emitidas desde 01/11/2026 importadas; {cancelled} cancelamentos aplicados. Último NSU: {state.UltimoNsu}."
+                    + $"\nPadrão nacional das novas notas: {avaliacoes[(int)StatusPadraoNacional.Conforme]} conforme(s), {avaliacoes[(int)StatusPadraoNacional.Divergente]} divergente(s), {avaliacoes[(int)StatusPadraoNacional.NaoAvaliada]} não avaliada(s), {avaliacoes[(int)StatusPadraoNacional.NaoSeAplica]} fora do escopo.";
             }
             int batchImported = 0, batchCancelled = 0;
+            var avaliacoesDoLote = new int[4];
             foreach (var doc in documents)
             {
                 ct.ThrowIfCancellationRequested();
@@ -42,7 +52,8 @@ public sealed class NacionalImportService(IDbContextFactory<ApplicationDbContext
                     throw new InvalidOperationException($"Chave inválida no NSU {doc.NSU}.");
                 if (doc.TipoDocumento == "NFSE")
                 {
-                    var note = NacionalXml.Parse(NacionalXml.Decode(doc.ArquivoXml), doc.ChaveAcesso);
+                    var xml = NacionalXml.Decode(doc.ArquivoXml);
+                    var note = NacionalXml.Parse(xml, doc.ChaveAcesso);
                     if (NacionalXml.ShouldImport(note, cnpj))
                     {
                         // Never update an existing note's payments, installments or logical deletion.
@@ -50,6 +61,13 @@ public sealed class NacionalImportService(IDbContextFactory<ApplicationDbContext
                             || await db.Nfses.AnyAsync(x => x.ChaveAcessoNacional == doc.ChaveAcesso, ct);
                         if (!exists)
                         {
+                            // Only enrich new ADN notes; existing fiscal/financial state and NSU logic stay untouched.
+                            if (AvaliacaoNacional.PrestadorAlvo(note.PrestadorCnpj))
+                            {
+                                note.AvaliacaoNacional = AvaliadorPadraoNacional.Avaliar(xml, doc.ChaveAcesso, note.PrestadorCnpj);
+                                note.AvaliacaoNacional.Documento = AvaliadorPadraoNacional.CriarDocumento(doc.ArquivoXml);
+                            }
+                            avaliacoesDoLote[(int)note.StatusPadrao]++;
                             note.Cancelada = db.Set<NacionalEvento>().Local.Any(x => x.Chave == doc.ChaveAcesso && x.Cancela)
                                 || await db.Set<NacionalEvento>().AnyAsync(x => x.Cnpj == cnpj && x.Chave == doc.ChaveAcesso && x.Cancela, ct);
                             var company = await db.EmpresasClassificadas.FirstOrDefaultAsync(x => x.Cnpj == note.TomadorCpfCnpj, ct);
@@ -78,6 +96,7 @@ public sealed class NacionalImportService(IDbContextFactory<ApplicationDbContext
             }
             await db.SaveChangesAsync(ct);
             await tx.CommitAsync(ct);
+            for (int i = 0; i < avaliacoes.Length; i++) avaliacoes[i] += avaliacoesDoLote[i];
             ImportDiagnostics.Write("Lote confirmado no banco");
             imported += batchImported; cancelled += batchCancelled; read += documents.Count;
             progress.Report($"{read} documentos examinados; {imported} notas importadas. Progresso salvo no NSU {state.UltimoNsu}.");

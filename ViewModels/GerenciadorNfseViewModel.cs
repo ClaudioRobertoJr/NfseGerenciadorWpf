@@ -19,6 +19,18 @@ namespace NfseGerenciador.ViewModels
         private readonly NfseXmlParser _parser;
         private readonly LogService _logService;
         public List<string> OpcoesStatusFiltro { get; } = new List<string> { "Todas", "Pagas", "Em Aberto" };
+        public List<string> OpcoesPadraoNacional { get; } = ["Todos", "Conforme", "Divergente", "Não avaliada", "Não se aplica"];
+        private string _filtroPadraoNacional = "Todos";
+        public string FiltroPadraoNacional
+        {
+            get => _filtroPadraoNacional;
+            set { _filtroPadraoNacional = value; OnPropertyChanged(nameof(FiltroPadraoNacional)); AplicarFiltroCompleto(true); }
+        }
+        private StatusPadraoNacional? PadraoSelecionado => FiltroPadraoNacional switch
+        {
+            "Conforme" => StatusPadraoNacional.Conforme, "Divergente" => StatusPadraoNacional.Divergente,
+            "Não avaliada" => StatusPadraoNacional.NaoAvaliada, "Não se aplica" => StatusPadraoNacional.NaoSeAplica, _ => null
+        };
         // Propriedades de Paginação
         private int _currentPage = 1;
         private int _pageSize = 50; // Quantidade de itens por página
@@ -320,8 +332,8 @@ namespace NfseGerenciador.ViewModels
 
         private void LimparFiltros()
         {
-            _filtroStatus = "Todas"; _filtroDataInicial = null; _filtroDataFinal = null; _filtroTexto = ""; _filtroLocal = null;
-            foreach (var name in new[] { nameof(FiltroStatus), nameof(FiltroDataInicial), nameof(FiltroDataFinal), nameof(FiltroTexto), nameof(RotuloDataFiltro) }) OnPropertyChanged(name);
+            _filtroStatus = "Todas"; _filtroDataInicial = null; _filtroDataFinal = null; _filtroTexto = ""; _filtroLocal = null; _filtroPadraoNacional = "Todos";
+            foreach (var name in new[] { nameof(FiltroStatus), nameof(FiltroDataInicial), nameof(FiltroDataFinal), nameof(FiltroTexto), nameof(RotuloDataFiltro), nameof(FiltroPadraoNacional) }) OnPropertyChanged(name);
             AplicarFiltroCompleto(true);
         }
         #endregion
@@ -333,7 +345,7 @@ namespace NfseGerenciador.ViewModels
         private async Task CarregarListaAsync(int pagina)
         {
             int versao = ++_consultaVersao;
-            var filtro = new FiltroConsultaNotas(FiltroStatus, FiltroTexto, _filtroLocal, FiltroDataInicial, FiltroDataFinal, pagina, PageSize);
+            var filtro = new FiltroConsultaNotas(FiltroStatus, FiltroTexto, _filtroLocal, FiltroDataInicial, FiltroDataFinal, pagina, PageSize, PadraoSelecionado);
             IsCarregandoLista = true;
             ErroConsulta = "";
             try

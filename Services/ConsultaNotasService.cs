@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using NfseGerenciador.Models;
 namespace NfseGerenciador.Services;
 
-internal sealed record FiltroConsultaNotas(string? Status, string? Texto, string? Local, DateTime? Inicio, DateTime? Fim, int Pagina, int Tamanho);
+internal sealed record FiltroConsultaNotas(string? Status, string? Texto, string? Local, DateTime? Inicio, DateTime? Fim, int Pagina, int Tamanho, StatusPadraoNacional? Padrao = null);
 internal sealed record PaginaNotas(IReadOnlyList<Nfse> Notas, int Total, int Pagina);
 internal sealed class ConsultaNotasService(IDbContextFactory<ApplicationDbContext> factory)
 {
@@ -11,7 +11,8 @@ internal sealed class ConsultaNotasService(IDbContextFactory<ApplicationDbContex
         if (filtro.Tamanho <= 0) throw new ArgumentOutOfRangeException(nameof(filtro.Tamanho));
         if (filtro.Inicio?.Date > filtro.Fim?.Date) throw new InvalidOperationException("A data inicial deve ser anterior ou igual à data final.");
         await using var db = await factory.CreateDbContextAsync();
-        IQueryable<Nfse> query = db.Nfses.AsNoTracking().Where(n => !n.Excluida).Include(n => n.Pagamento);
+        IQueryable<Nfse> query = db.Nfses.AsNoTracking().Where(n => !n.Excluida).Include(n => n.Pagamento).Include(n => n.AvaliacaoNacional);
+        query = FiltrarPadrao(query, filtro.Padrao);
         if (filtro.Status == "Pagas") query = query.Where(n => n.EstaPago);
         else if (filtro.Status == "Em Aberto") query = query.Where(n => !n.EstaPago && !n.Cancelada);
         if (Enum.TryParse<LocalPagamento>(filtro.Local, out var local)) query = query.Where(n => n.Local == local);
@@ -42,5 +43,18 @@ internal sealed class ConsultaNotasService(IDbContextFactory<ApplicationDbContex
         var notas = await query.OrderByDescending(n => n.DataEmissao).ThenBy(n => n.Numero).ThenBy(n => n.Id)
             .Skip((pagina - 1) * filtro.Tamanho).Take(filtro.Tamanho).ToListAsync();
         return new(notas, total, pagina);
+    }
+
+    internal static IQueryable<Nfse> FiltrarPadrao(IQueryable<Nfse> query, StatusPadraoNacional? padrao)
+    {
+        if (padrao == null) return query;
+        if (padrao == StatusPadraoNacional.NaoSeAplica)
+            return query.Where(n => n.ChaveAcessoNacional == null || n.ChaveAcessoNacional == ""
+                || n.PrestadorCnpj.Replace(".", "").Replace("/", "").Replace("-", "").Replace(" ", "") != AvaliacaoNacional.CnpjAlvo);
+        query = query.Where(n => n.ChaveAcessoNacional != null && n.ChaveAcessoNacional != ""
+            && n.PrestadorCnpj.Replace(".", "").Replace("/", "").Replace("-", "").Replace(" ", "") == AvaliacaoNacional.CnpjAlvo);
+        return padrao == StatusPadraoNacional.NaoAvaliada
+            ? query.Where(n => n.AvaliacaoNacional == null || n.AvaliacaoNacional.Status == StatusPadraoNacional.NaoAvaliada)
+            : query.Where(n => n.AvaliacaoNacional != null && n.AvaliacaoNacional.Status == padrao);
     }
 }

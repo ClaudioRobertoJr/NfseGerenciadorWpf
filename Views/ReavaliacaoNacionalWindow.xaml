@@ -1,0 +1,20 @@
+<Window x:Class="NfseGerenciador.Views.ReavaliacaoNacionalWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Reavaliar padrão nacional" Width="640" Height="350" MinWidth="540" MinHeight="300"
+        WindowStartupLocation="CenterOwner" Closing="Window_Closing">
+    <DockPanel Margin="20">
+        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button x:Name="IniciarButton" Content="Reavaliar documentos disponíveis" Click="Iniciar_Click" Padding="12,7" Margin="0,0,10,0"/>
+            <Button x:Name="PararButton" Content="Parar" Click="Parar_Click" IsEnabled="False" Padding="12,7"/>
+        </StackPanel>
+        <StackPanel>
+            <TextBlock Text="Padrão nacional • 72.547.623/0001-90" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap"/>
+            <TextBlock Margin="0,12,0,0" TextWrapping="Wrap"
+                       Text="Reavalia os documentos armazenados desse prestador, inclusive notas pagas, canceladas ou excluídas, independentemente dos filtros. Não consulta a API nem altera notas, pagamentos, parcelas ou NSU."/>
+            <TextBlock Margin="0,8,0,0" TextWrapping="Wrap" Text="Notas antigas sem documento continuarão não avaliadas. Você pode interromper; os lotes já concluídos serão preservados."/>
+            <ProgressBar x:Name="Progresso" Height="4" Margin="0,18,0,8" Visibility="Collapsed" IsIndeterminate="True"/>
+            <TextBlock x:Name="ResultadoText" Margin="0,10,0,0" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite"/>
+        </StackPanel>
+    </DockPanel>
+</Window>
