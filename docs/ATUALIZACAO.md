@@ -1,3 +1,13 @@
+# Novidades da versão 1.1.9
+
+Nova avaliação de **Padrão nacional** nas notas importadas pela API ADN para o prestador **72.547.623/0001-90**. A lista ganhou coluna e filtro independentes da situação financeira; **Ver avaliação** mostra campo, valor encontrado, esperado e motivo. O padrão considera tributação nacional, NBS, suspensão administrativa e processo, e retenção do ISSQN. É um padrão operacional informado pelo usuário, não uma conclusão sobre regularidade fiscal.
+
+As notas podem ficar **Conformes**, **Divergentes** ou **Não avaliadas** por ausência/erro de leitura; outros prestadores e notas municipais ficam fora da regra. O documento recebido pela API passa a ser preservado. **Reavaliar padrão nacional** utiliza apenas documentos já armazenados, com progresso e opção de parar, sem consultar a API nem alterar baixas, parcelas ou NSU.
+
+Notas nacionais importadas anteriormente sem documento armazenado continuarão **Não avaliadas**. Esta atualização não recupera o histórico nem reinicia a sincronização. O fluxo de certificado A1/A3, comunicação ADN, proteção por chave e importação manual de XML foi mantido. A avaliação não cancela notas, não bloqueia pagamentos e não corrige a emissão na origem.
+
+**Há uma migração aditiva do banco**, criando as tabelas de avaliação e documentos, sem reescrever notas ou histórico financeiro. Faça backup antes de atualizar e mantenha permissão para migrações ao iniciar o aplicativo. Os documentos armazenados aumentam o tamanho do banco e dos backups. A validação com certificado e API reais continua dependendo do computador de destino. Consulte `PADRAO-NACIONAL.md` incluído no pacote.
+
 # Novidades da versão 1.1.8
 
 Novo botão **Baixar empresas classificadas** na tela de notas. Ele pode ser usado a qualquer momento para baixar notas pendentes atuais ou recém-importadas, sem relatório Excel.

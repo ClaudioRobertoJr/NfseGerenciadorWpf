@@ -13,6 +13,22 @@ namespace NfseGerenciador.Views
     /// </summary>
     public partial class GerenciadorNfseWindow : Window
     {
+        private void VerAvaliacao_Click(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is not GerenciadorNfseViewModel vm || vm.NfseSelecionada == null)
+            {
+                MessageBox.Show(this, "Selecione uma nota na lista.", "Padrão nacional", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+            new AvaliacaoNacionalWindow(vm.NfseSelecionada) { Owner = this }.ShowDialog();
+        }
+
+        private void ReavaliarNacional_Click(object sender, RoutedEventArgs e)
+        {
+            var factory = App.ServiceProvider.GetRequiredService<IDbContextFactory<ApplicationDbContext>>();
+            new ReavaliacaoNacionalWindow(factory) { Owner = this }.ShowDialog();
+            if (DataContext is GerenciadorNfseViewModel vm) vm.AtualizarListaCommand.Execute(null);
+        }
         private void ImportarBaixas(object sender, RoutedEventArgs e)
         {
             try

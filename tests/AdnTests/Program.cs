@@ -5,6 +5,7 @@ using System.Text.Json;
 if (args.FirstOrDefault() == "--fake-worker")
 {
     var mode = args[1];
+    var importBatches = mode == "import" ? new Queue<AdnTestBatch>(JsonSerializer.Deserialize<List<AdnTestBatch>>(File.ReadAllText(args[2]))!) : null;
     while (await Console.In.ReadLineAsync() is { } line)
     {
         var request = JsonSerializer.Deserialize<AdnWorkerRequest>(line)!;
@@ -16,6 +17,14 @@ if (args.FirstOrDefault() == "--fake-worker")
         if (mode == "exit") return;
         if (mode == "hang") { await Task.Delay(30000); return; }
         if (mode == "malformed") { Console.WriteLine("invalid-json"); return; }
+        if (mode == "import")
+        {
+            var importBatch = importBatches!.Dequeue();
+            Console.WriteLine(JsonSerializer.Serialize(request.Nsu == importBatch.Esperado
+                ? new AdnWorkerResponse(importBatch.Documentos, null)
+                : new AdnWorkerResponse(null, $"NSU incorreto: {request.Nsu}; esperado {importBatch.Esperado}.")));
+            continue;
+        }
         Console.WriteLine(JsonSerializer.Serialize(mode == "error"
             ? new AdnWorkerResponse(null, "Falha TLS simulada")
             : new AdnWorkerResponse([new() { NSU=request.Nsu+1, ArquivoXml="sintetico" }], null)));

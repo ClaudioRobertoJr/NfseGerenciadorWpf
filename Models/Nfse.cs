@@ -11,6 +11,10 @@ namespace NfseGerenciador.Models
         [Key]
         public int Id { get; set; }
         public string? ChaveAcessoNacional { get; set; }
+        public AvaliacaoNacional? AvaliacaoNacional { get; set; }
+        [NotMapped] public StatusPadraoNacional StatusPadrao => string.IsNullOrEmpty(ChaveAcessoNacional) || !global::NfseGerenciador.Models.AvaliacaoNacional.PrestadorAlvo(PrestadorCnpj)
+            ? StatusPadraoNacional.NaoSeAplica : AvaliacaoNacional?.Status ?? StatusPadraoNacional.NaoAvaliada;
+        [NotMapped] public string PadraoNacionalTexto => global::NfseGerenciador.Models.AvaliacaoNacional.NomeStatus(StatusPadrao);
         public bool Cancelada { get; set; }
         public string Numero { get; set; }
         public string CodigoVerificacao { get; set; }

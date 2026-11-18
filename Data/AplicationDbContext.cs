@@ -34,6 +34,23 @@ public class ApplicationDbContext : DbContext
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<AvaliacaoNacional>(entity =>
+            {
+                entity.ToTable("AvaliacoesNacionais");
+                entity.HasKey(x => x.NfseId);
+                entity.HasOne(x => x.Nota).WithOne(x => x.AvaliacaoNacional)
+                    .HasForeignKey<AvaliacaoNacional>(x => x.NfseId).OnDelete(DeleteBehavior.Restrict);
+                entity.Property(x => x.VersaoRegra).IsConcurrencyToken();
+                entity.HasIndex(x => x.Status);
+            });
+            modelBuilder.Entity<DocumentoNacional>(entity =>
+            {
+                entity.ToTable("DocumentosNacionais");
+                entity.HasKey(x => x.NfseId);
+                entity.HasOne(x => x.Avaliacao).WithOne(x => x.Documento)
+                    .HasForeignKey<DocumentoNacional>(x => x.NfseId).OnDelete(DeleteBehavior.Restrict);
+                entity.Property(x => x.Sha256).HasMaxLength(64);
+            });
             modelBuilder.Entity<LoteBaixa>().Property(x => x.Valor).HasPrecision(18, 2);
             modelBuilder.Entity<RegistroBaixa>().Property(x => x.Valor).HasPrecision(18, 2);
             modelBuilder.Entity<RegistroBaixa>().HasIndex(x => x.Impressao).IsUnique();
